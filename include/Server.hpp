@@ -6,8 +6,8 @@
 # include <cstring>
 # include <cstdlib>
 # include <cerrno>
-# include <map>
 # include <vector>
+# include <sstream>
 
 # include <unistd.h>
 # include <fcntl.h>
@@ -22,6 +22,8 @@
 /* Server Config */
 # define ADDR "0.0.0.0"
 # define MAX_PENDING_CONNECTIONS 128
+# define BUFFER_SIZE 1024
+# define SERVER_NAME "ircserv"
 
 
 
@@ -30,39 +32,42 @@ class Server
 	private:
 		int                                 Port;
 		int                                 listenSockFd;
+		std::string                         Password;
 		static bool                         Signal;
 		std::vector<Client>                 Clients;
-		std::vector<struct poolfd>          Fd;
+		std::vector<struct pollfd>          Fd;
 
 
 		void SetupSocket( int Port );
 		void Socketreuse( int fd );
 		void SetNonBlocking( int fd );
 
+		void AcceptClient( void );
+		void ReceiveData( int fd );
+		void DisconnectClient( int fd );
+		void HandleCommand( std::string cmd, int fd );
+
+		/* Auth Commands */
+		void CmdPass( std::string param, int fd );
+		void CmdNick( std::string param, int fd );
+		void CmdUser( std::string param, int fd );
+
+		/* Helpers */
+		Client *getClientByFd( int fd );
+		void SendReply( int fd, std::string msg );
+		void WelcomeClient( int fd );
+		bool NicknameInUse( std::string nickname );
+
 	public:
 		Server();
 		Server(int Port, std::string Password);
 		~Server();
 
-
+		/* Server Actions */
 		void run( void );
 		void stop ( void );
-
+		static void SignalHandler( int signum );
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #endif

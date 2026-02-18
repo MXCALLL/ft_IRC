@@ -1,0 +1,8 @@
+# Object files
+*.o
+
+# README
+*.md
+
+# Executable
+ircserv

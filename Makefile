@@ -1,10 +1,13 @@
 CPP = c++
 CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
-SRC = main.cpp
+SRCDIR = src
+INCDIR = include
+
+SRC = $(SRCDIR)/main.cpp $(SRCDIR)/Server.cpp $(SRCDIR)/Client.cpp
 OBJ = $(SRC:.cpp=.o)
-NAME = program
-HEADER = header.hpp
+NAME = ircserv
+HEADER = $(INCDIR)/Server.hpp $(INCDIR)/Client.hpp
 
 all: $(NAME)
 
@@ -12,7 +15,7 @@ $(NAME): $(OBJ)
 	$(CPP) $(OBJ) $(CPPFLAGS) -o $(NAME)
 
 %.o: %.cpp $(HEADER)
-	$(CPP) $(CPPFLAGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) -I$(INCDIR) -c $< -o $@
 
 clean:
 	rm -f $(OBJ)
@@ -22,4 +25,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all fclean
+.PHONY: all clean fclean re
