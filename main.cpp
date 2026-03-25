@@ -1,19 +1,19 @@
 
-#include "../include/Server.hpp"
+#include "include/Server.hpp"
 
 
 
 int main(int ac, char **av){
 
     if (ac != 3){
-        std::cerr << "[IRCSERVER]: Argument Count Not Correct !!" << std::endl;
+        std::cerr << "[ERROR]: ./IRCSERVER <Port> <Password>" << std::endl;
         return (EXIT_FAILURE);
     }
 
     int Port = std::atoi(av[1]);
     std::string Password = av[2];
 
-    if (Port < 1024 || Port > 65535){
+    if (Port <= MAX_SYS_PORT || Port > MAX_PORT){
         std::cerr << "[IRCSERVER]: Invalid Port Number !!" << std::endl;
         return (EXIT_FAILURE);
     }

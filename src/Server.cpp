@@ -16,7 +16,7 @@ Server::~Server(){
 
 void Server::SignalHandler( int signum ){
     (void)signum;
-    std::cout << "\n[IRCSERVER]: Signal Received, Shutting Down !!" << std::endl;
+    std::cout << "\n[IRCSERVER]: Shutting Down !!" << std::endl;
     Signal = true;
 }
 
@@ -227,8 +227,10 @@ void Server::HandleCommand( std::string cmd, int fd ){
     for (size_t i = 0; i < command.size(); i++)
         command[i] = std::toupper(command[i]);
 
-    if (command == "CAP")
+    if (isPrintable(param)){
+        SendReply(fd, ":" + std::string(SERVER_NAME) + "1337 * : Only Printable Allowed\r\n");
         return ;
+    }
 
     if (command == "PASS")
         CmdPass(param, fd);

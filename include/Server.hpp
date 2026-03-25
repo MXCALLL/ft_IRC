@@ -24,6 +24,8 @@
 # define MAX_PENDING_CONNECTIONS 128
 # define BUFFER_SIZE 1024
 # define SERVER_NAME "ircserv"
+# define MAX_PORT 65535
+# define MAX_SYS_PORT 1023
 
 
 
@@ -57,6 +59,7 @@ class Server
 		void SendReply( int fd, std::string msg );
 		void WelcomeClient( int fd );
 		bool NicknameInUse( std::string nickname );
+		bool isPrintable( std::string Params);
 
 	public:
 		Server();

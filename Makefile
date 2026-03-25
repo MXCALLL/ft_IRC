@@ -4,9 +4,9 @@ CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 SRCDIR = src
 INCDIR = include
 
-SRC = $(SRCDIR)/main.cpp $(SRCDIR)/Server.cpp $(SRCDIR)/Client.cpp
+SRC = main.cpp $(SRCDIR)/Server.cpp $(SRCDIR)/Client.cpp $(SRCDIR)/Utils.cpp
 OBJ = $(SRC:.cpp=.o)
-NAME = ircserv
+NAME = IRCSERVER
 HEADER = $(INCDIR)/Server.hpp $(INCDIR)/Client.hpp
 
 all: $(NAME)
