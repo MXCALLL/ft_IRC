@@ -46,15 +46,18 @@ class Server
 
 		void AcceptClient( void );
 		void ReceiveData( int fd );
-		void DisconnectClient( int fd );
-		void HandleCommand( std::string cmd, int fd );
+        void SendData( int fd );
+        void DisconnectClient( int fd );
+        void PerformTimeouts( void );
+        void HandleCommand( std::string cmd, int fd );
 
-		/* Auth Commands */
-		void CmdPass( std::string param, int fd );
-		void CmdNick( std::string param, int fd );
-		void CmdUser( std::string param, int fd );
+        /* Auth Commands */
+        void CmdPass( std::string param, int fd );
+        void CmdNick( std::string param, int fd );
+        void CmdUser( std::string param, int fd );
+        void CmdPing( std::string param, int fd );
+        void CmdPong( std::string param, int fd );
 
-		/* Helpers */
 		Client *getClientByFd( int fd );
 		void SendReply( int fd, std::string msg );
 		void WelcomeClient( int fd );

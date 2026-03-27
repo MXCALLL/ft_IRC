@@ -16,7 +16,7 @@ Server::~Server(){
 
 void Server::SignalHandler( int signum ){
     (void)signum;
-    std::cout << "\n[IRCSERVER]: Shutting Down !!" << std::endl;
+    std::cout << "\n[IRCSERV]: Shutting Down !!" << std::endl;
     Signal = true;
 }
 
@@ -83,7 +83,7 @@ Server::Server(int _Port, std::string _Password) : Port(_Port), Password(_Passwo
     pfd.revents = 0;
     Fd.push_back(pfd);
 
-    std::cout << "[IRCSERVER]: Listen on Port " << this->Port << std::endl;
+    std::cout << "[IRCSERV]: Listen on Port " << this->Port << std::endl;
 }
 
 
@@ -94,7 +94,15 @@ void Server::run( void ){
 
     while (!Signal){
 
-        int ret = poll(&Fd[0], Fd.size(), -1);
+        for (size_t i = 1; i < Fd.size(); i++){
+            Client *client = getClientByFd(Fd[i].fd);
+            if (client && !client->getOutBuffer().empty())
+                Fd[i].events |= POLLOUT;
+            else
+                Fd[i].events &= ~POLLOUT;
+        }
+
+        int ret = poll(&Fd[0], Fd.size(), 1000);
         if (ret < 0 && !Signal)
             throw std::runtime_error("Error On Poll !!");
         if (Signal)
@@ -107,7 +115,12 @@ void Server::run( void ){
                 else
                     ReceiveData(Fd[i].fd);
             }
+            if (Fd[i].revents & POLLOUT){
+                SendData(Fd[i].fd);
+            }
         }
+
+        PerformTimeouts();
     }
 
     stop();
@@ -123,7 +136,7 @@ void Server::stop( void ){
         close(listenSockFd);
         listenSockFd = -1;
     }
-    std::cout << "[IRCSERVER]: Server Stopped !!" << std::endl;
+    std::cout << "[IRCSERV]: Server Stopped !!" << std::endl;
 }
 
 void Server::AcceptClient( void ){
@@ -133,7 +146,7 @@ void Server::AcceptClient( void ){
 
     int clientFd = accept(listenSockFd, reinterpret_cast<sockaddr *>(&clientAddr), &clientLen);
     if (clientFd < 0){
-        std::cerr << "[IRCSERVER]: Error On Accept !!" << std::endl;
+        std::cerr << "[IRCSERV]: Error On Accept !!" << std::endl;
         return ;
     }
 
@@ -148,13 +161,13 @@ void Server::AcceptClient( void ){
     Client newClient(clientFd, inet_ntoa(clientAddr.sin_addr));
     Clients.push_back(newClient);
 
-    std::cout << "[IRCSERVER]: New Connection from " << inet_ntoa(clientAddr.sin_addr)
+    std::cout << "[IRCSERV]: New Connection from " << inet_ntoa(clientAddr.sin_addr)
               << " on fd " << clientFd << std::endl;
 }
 
 void Server::DisconnectClient( int fd ){
 
-    std::cout << "[IRCSERVER]: Client Disconnected fd " << fd << std::endl;
+    std::cout << "[IRCSERV]: Client Disconnected fd " << fd << std::endl;
 
     close(fd);
 
@@ -189,6 +202,7 @@ void Server::ReceiveData( int fd ){
     if (!client)
         return ;
 
+    client->setLastActivityTime(time(NULL));
     client->appendBuffer(std::string(buffer, bytes));
 
     std::string buf = client->getBuffer();
@@ -211,15 +225,81 @@ void Server::ReceiveData( int fd ){
     }
 }
 
+void Server::SendData( int fd ){
+    Client *client = getClientByFd(fd);
+    if (!client)
+        return ;
+
+    std::string out = client->getOutBuffer();
+    if (out.empty())
+        return ;
+
+    int bytes = send(fd, out.c_str(), out.size(), 0);
+    if (bytes > 0){
+        client->eraseOutBuffer(bytes);
+    } else if (bytes < 0) {
+        if (errno != EWOULDBLOCK && errno != EAGAIN) {
+            std::cerr << "[IRCSERV]: Send error on fd " << fd << std::endl;
+            DisconnectClient(fd);
+        }
+    }
+}
+
+void Server::PerformTimeouts( void ){
+    time_t now = time(NULL);
+    const int PING_TIMEOUT = 120;
+    const int DEAD_TIMEOUT = 180;
+
+    for (size_t i = 0; i < Clients.size(); i++){
+        time_t lastActivity = Clients[i].getLastActivityTime();
+        time_t lastPing = Clients[i].getLastPingTime();
+
+        if (now - lastActivity > DEAD_TIMEOUT){
+            std::cout << "[IRCSERV]: Client " << Clients[i].getFd() << " Ping Timeout !!" << std::endl;
+            DisconnectClient(Clients[i].getFd());
+            i--;
+        }
+        else if (now - lastActivity > PING_TIMEOUT && now - lastPing > PING_TIMEOUT){
+            SendReply(Clients[i].getFd(), "PING :" + std::string(SERVER_NAME) + "\r\n");
+            Clients[i].setLastPingTime(now);
+        }
+    }
+}
+
+
 void Server::HandleCommand( std::string cmd, int fd ){
 
+    while (!cmd.empty() && (cmd[cmd.size() - 1] == '\r' || cmd[cmd.size() - 1] == '\n'))
+        cmd.erase(cmd.size() - 1);
+
+    if (cmd.empty())
+        return;
+
+    std::string prefix;
     std::string command;
     std::string param;
+
+    if (cmd[0] == ':') {
+        size_t space = cmd.find(' ');
+        if (space != std::string::npos) {
+            prefix = cmd.substr(1, space - 1);
+            cmd = cmd.substr(space + 1);
+        } else {
+            return;
+        }
+    }
 
     size_t space = cmd.find(' ');
     if (space != std::string::npos){
         command = cmd.substr(0, space);
         param = cmd.substr(space + 1);
+
+        size_t first_non_space = param.find_first_not_of(' ');
+        if (first_non_space != std::string::npos) {
+            param = param.substr(first_non_space);
+        } else {
+            param = "";
+        }
     }
     else
         command = cmd;
@@ -227,8 +307,8 @@ void Server::HandleCommand( std::string cmd, int fd ){
     for (size_t i = 0; i < command.size(); i++)
         command[i] = std::toupper(command[i]);
 
-    if (isPrintable(param)){
-        SendReply(fd, ":" + std::string(SERVER_NAME) + "1337 * : Only Printable Allowed\r\n");
+    if (!isPrintable(param)){
+        SendReply(fd, ":" + std::string(SERVER_NAME) + " 400 * :Non-printable characters not allowed\r\n");
         return ;
     }
 
@@ -238,6 +318,10 @@ void Server::HandleCommand( std::string cmd, int fd ){
         CmdNick(param, fd);
     else if (command == "USER")
         CmdUser(param, fd);
+    else if (command == "PING")
+        CmdPing(param, fd);
+    else if (command == "PONG")
+        CmdPong(param, fd);
     else{
         Client *client = getClientByFd(fd);
         if (client && !client->getRegistered())
@@ -267,7 +351,7 @@ void Server::CmdPass( std::string param, int fd ){
     }
 
     client->setPassAccepted(true);
-    std::cout << "[IRCSERVER]: fd " << fd << " Password Accepted !!" << std::endl;
+    std::cout << "[IRCSERV]: fd " << fd << " Password Accepted !!" << std::endl;
 }
 
 
@@ -306,12 +390,12 @@ void Server::CmdNick( std::string param, int fd ){
 
     std::string oldNick = client->getNickname();
     client->setNickname(param);
-    std::cout << "[IRCSERVER]: fd " << fd << " Nickname set to " << param << std::endl;
+    std::cout << "[IRCSERV]: fd " << fd << " Nickname set to " << param << std::endl;
 
     if (!client->getRegistered() && !client->getUsername().empty()){
         client->setRegistered(true);
         WelcomeClient(fd);
-        std::cout << "[IRCSERVER]: fd " << fd << " Registration Complete !!" << std::endl;
+        std::cout << "[IRCSERV]: fd " << fd << " Registration Complete !!" << std::endl;
     }
 }
 
@@ -355,13 +439,36 @@ void Server::CmdUser( std::string param, int fd ){
 
     client->setUsername(username);
     client->setRealname(realname);
-    std::cout << "[IRCSERVER]: fd " << fd << " Username set to " << username << std::endl;
+    std::cout << "[IRCSERV]: fd " << fd << " Username set to " << username << std::endl;
 
-    if (!client->getRegistered() && !client->getNickname().empty()){
+    if (!client->getRegistered() && !client->getNickname().empty() && !client->getUsername().empty()){
         client->setRegistered(true);
         WelcomeClient(fd);
-        std::cout << "[IRCSERVER]: fd " << fd << " Registration Complete !!" << std::endl;
+        std::cout << "[IRCSERV]: fd " << fd << " Registration Complete !!" << std::endl;
     }
+}
+
+
+void Server::CmdPing( std::string param, int fd ){
+    Client *client = getClientByFd(fd);
+    if (!client)
+        return ;
+
+    if (param.empty()){
+        SendReply(fd, ":" + std::string(SERVER_NAME) + " 409 * :No origin specified\r\n");
+        return ;
+    }
+
+    SendReply(fd, "PONG " + std::string(SERVER_NAME) + " :" + param + "\r\n");
+}
+
+void Server::CmdPong( std::string param, int fd ){
+    Client *client = getClientByFd(fd);
+    if (!client)
+        return ;
+
+    (void)param;
+    client->setLastActivityTime(time(NULL));
 }
 
 
@@ -375,7 +482,10 @@ Client *Server::getClientByFd( int fd ){
 }
 
 void Server::SendReply( int fd, std::string msg ){
-    send(fd, msg.c_str(), msg.size(), 0);
+    Client *client = getClientByFd(fd);
+    if (client){
+        client->appendOutBuffer(msg);
+    }
 }
 
 bool Server::NicknameInUse( std::string nickname ){

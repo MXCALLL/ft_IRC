@@ -6,7 +6,7 @@
 int main(int ac, char **av){
 
     if (ac != 3){
-        std::cerr << "[ERROR]: ./IRCSERVER <Port> <Password>" << std::endl;
+        std::cerr << "[ERROR]: ./ircserv <Port> <Password>" << std::endl;
         return (EXIT_FAILURE);
     }
 
@@ -14,12 +14,12 @@ int main(int ac, char **av){
     std::string Password = av[2];
 
     if (Port <= MAX_SYS_PORT || Port > MAX_PORT){
-        std::cerr << "[IRCSERVER]: Invalid Port Number !!" << std::endl;
+        std::cerr << "[IRCSERV]: Invalid Port Number !!" << std::endl;
         return (EXIT_FAILURE);
     }
 
     if (Password.empty()){
-        std::cerr << "[IRCSERVER]: Password Cannot Be Empty !!" << std::endl;
+        std::cerr << "[IRCSERV]: Password Cannot Be Empty !!" << std::endl;
         return (EXIT_FAILURE);
     }
 
@@ -30,7 +30,7 @@ int main(int ac, char **av){
     }
     catch(const std::exception& e)
     {
-        std::cerr << "[IRCSERVER]: " << e.what() << '\n';
+        std::cerr << "[IRCSERV]: " << e.what() << '\n';
         return (EXIT_FAILURE);
     }
 
