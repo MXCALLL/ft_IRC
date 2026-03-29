@@ -7,8 +7,8 @@ bool Server::Signal = false;
 Server::Server(){}
 
 Server::~Server(){
-    for (size_t i = 0; i < Clients.size(); i++){
-        close(Clients[i].getFd());
+    for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
+        close(it->first);
     }
     if (listenSockFd >= 0)
         close(listenSockFd);
@@ -20,15 +20,7 @@ void Server::SignalHandler( int signum ){
     Signal = true;
 }
 
-void Server::Socketreuse( int fd ){
 
-    int op = 1;
-    if (setsockopt(listenSockFd, SOL_SOCKET, SO_REUSEADDR, &op, sizeof(op)) < 0){
-        close (fd);
-        throw std::runtime_error("Error On Sockopt ADDR !!");
-    }
-
-}
 
 void Server::SetNonBlocking( int fd ){
 
@@ -48,7 +40,12 @@ void Server::SetupSocket( int Port ){
         throw std::runtime_error("Error On Socket !!");
     }
 
-    Socketreuse(listenSockFd);
+    int op = 1;
+    if (setsockopt(listenSockFd, SOL_SOCKET, SO_REUSEADDR, &op, sizeof(op)) < 0){
+        close(listenSockFd);
+        throw std::runtime_error("Error On Sockopt ADDR !!");
+    }
+
     SetNonBlocking(listenSockFd);
 
     sockaddr_in serv;
@@ -96,7 +93,7 @@ void Server::run( void ){
 
         for (size_t i = 1; i < Fd.size(); i++){
             Client *client = getClientByFd(Fd[i].fd);
-            if (client && !client->getOutBuffer().empty())
+            if (client && !client->OutBuffer.empty())
                 Fd[i].events |= POLLOUT;
             else
                 Fd[i].events &= ~POLLOUT;
@@ -127,8 +124,8 @@ void Server::run( void ){
 }
 
 void Server::stop( void ){
-    for (size_t i = 0; i < Clients.size(); i++){
-        close(Clients[i].getFd());
+    for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
+        close(it->first);
     }
     Clients.clear();
     Fd.clear();
@@ -159,7 +156,7 @@ void Server::AcceptClient( void ){
     Fd.push_back(pfd);
 
     Client newClient(clientFd, inet_ntoa(clientAddr.sin_addr));
-    Clients.push_back(newClient);
+    Clients[clientFd] = newClient;
 
     std::cout << "[IRCSERV]: New Connection from " << inet_ntoa(clientAddr.sin_addr)
               << " on fd " << clientFd << std::endl;
@@ -171,12 +168,7 @@ void Server::DisconnectClient( int fd ){
 
     close(fd);
 
-    for (size_t i = 0; i < Clients.size(); i++){
-        if (Clients[i].getFd() == fd){
-            Clients.erase(Clients.begin() + i);
-            break ;
-        }
-    }
+    Clients.erase(fd);
 
     for (size_t i = 0; i < Fd.size(); i++){
         if (Fd[i].fd == fd){
@@ -202,26 +194,20 @@ void Server::ReceiveData( int fd ){
     if (!client)
         return ;
 
-    client->setLastActivityTime(time(NULL));
-    client->appendBuffer(std::string(buffer, bytes));
+    client->LastActivityTime = time(NULL);
+    client->Buffer += std::string(buffer, bytes);
 
-    std::string buf = client->getBuffer();
     size_t pos;
+    while ((pos = client->Buffer.find("\n")) != std::string::npos){
 
-    while ((pos = buf.find("\n")) != std::string::npos){
-
-        std::string line = buf.substr(0, pos);
-        buf = buf.substr(pos + 1);
-        client->clearBuffer();
-        client->appendBuffer(buf);
+        std::string line = client->Buffer.substr(0, pos);
+        client->Buffer.erase(0, pos + 1);
 
         if (!line.empty() && line[line.size() - 1] == '\r')
             line = line.substr(0, line.size() - 1);
 
         if (!line.empty())
             HandleCommand(line, fd);
-
-        buf = client->getBuffer();
     }
 }
 
@@ -230,13 +216,13 @@ void Server::SendData( int fd ){
     if (!client)
         return ;
 
-    std::string out = client->getOutBuffer();
+    std::string out = client->OutBuffer;
     if (out.empty())
         return ;
 
     int bytes = send(fd, out.c_str(), out.size(), 0);
     if (bytes > 0){
-        client->eraseOutBuffer(bytes);
+        client->OutBuffer.erase(0, bytes);
     } else if (bytes < 0) {
         if (errno != EWOULDBLOCK && errno != EAGAIN) {
             std::cerr << "[IRCSERV]: Send error on fd " << fd << std::endl;
@@ -250,19 +236,24 @@ void Server::PerformTimeouts( void ){
     const int PING_TIMEOUT = 120;
     const int DEAD_TIMEOUT = 180;
 
-    for (size_t i = 0; i < Clients.size(); i++){
-        time_t lastActivity = Clients[i].getLastActivityTime();
-        time_t lastPing = Clients[i].getLastPingTime();
+    for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ){
+        time_t lastActivity = it->second.LastActivityTime;
+        time_t lastPing = it->second.LastPingTime;
+        int fd = it->first;
 
         if (now - lastActivity > DEAD_TIMEOUT){
-            std::cout << "[IRCSERV]: Client " << Clients[i].getFd() << " Ping Timeout !!" << std::endl;
-            DisconnectClient(Clients[i].getFd());
-            i--;
+            std::cout << "[IRCSERV]: Client " << fd << " Ping Timeout !!" << std::endl;
+
+            ++it;
+            DisconnectClient(fd);
+            continue;
         }
         else if (now - lastActivity > PING_TIMEOUT && now - lastPing > PING_TIMEOUT){
-            SendReply(Clients[i].getFd(), "PING :" + std::string(SERVER_NAME) + "\r\n");
-            Clients[i].setLastPingTime(now);
+            SendReply(fd, "PING :" + std::string(SERVER_NAME) + "\r\n");
+
+            it->second.LastPingTime = now;
         }
+        ++it;
     }
 }
 
@@ -275,34 +266,22 @@ void Server::HandleCommand( std::string cmd, int fd ){
     if (cmd.empty())
         return;
 
-    std::string prefix;
-    std::string command;
-    std::string param;
+    std::stringstream ss(cmd);
+    std::string prefix, command, param;
 
     if (cmd[0] == ':') {
-        size_t space = cmd.find(' ');
-        if (space != std::string::npos) {
-            prefix = cmd.substr(1, space - 1);
-            cmd = cmd.substr(space + 1);
-        } else {
-            return;
-        }
+        ss >> prefix;
     }
 
-    size_t space = cmd.find(' ');
-    if (space != std::string::npos){
-        command = cmd.substr(0, space);
-        param = cmd.substr(space + 1);
+    ss >> command;
+    std::getline(ss, param);
 
-        size_t first_non_space = param.find_first_not_of(' ');
-        if (first_non_space != std::string::npos) {
-            param = param.substr(first_non_space);
-        } else {
-            param = "";
-        }
+    size_t first_non_space = param.find_first_not_of(' ');
+    if (first_non_space != std::string::npos) {
+        param = param.substr(first_non_space);
+    } else {
+        param = "";
     }
-    else
-        command = cmd;
 
     for (size_t i = 0; i < command.size(); i++)
         command[i] = std::toupper(command[i]);
@@ -324,7 +303,7 @@ void Server::HandleCommand( std::string cmd, int fd ){
         CmdPong(param, fd);
     else{
         Client *client = getClientByFd(fd);
-        if (client && !client->getRegistered())
+        if (client && !client->Registered)
             SendReply(fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not registered\r\n");
     }
 }
@@ -335,8 +314,8 @@ void Server::CmdPass( std::string param, int fd ){
     if (!client)
         return ;
 
-    if (client->getRegistered()){
-        SendReply(fd, ":" + std::string(SERVER_NAME) + " 462 " + client->getNickname() + " :You may not reregister\r\n");
+    if (client->Registered){
+        SendReply(fd, ":" + std::string(SERVER_NAME) + " 462 " + client->Nickname + " :You may not reregister\r\n");
         return ;
     }
 
@@ -350,7 +329,7 @@ void Server::CmdPass( std::string param, int fd ){
         return ;
     }
 
-    client->setPassAccepted(true);
+    client->PassAccepted = true;
     std::cout << "[IRCSERV]: fd " << fd << " Password Accepted !!" << std::endl;
 }
 
@@ -361,7 +340,7 @@ void Server::CmdNick( std::string param, int fd ){
     if (!client)
         return ;
 
-    if (!client->getPassAccepted()){
+    if (!client->PassAccepted){
         SendReply(fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not sent PASS\r\n");
         return ;
     }
@@ -388,12 +367,12 @@ void Server::CmdNick( std::string param, int fd ){
         return ;
     }
 
-    std::string oldNick = client->getNickname();
-    client->setNickname(param);
+    std::string oldNick = client->Nickname;
+    client->Nickname = param;
     std::cout << "[IRCSERV]: fd " << fd << " Nickname set to " << param << std::endl;
 
-    if (!client->getRegistered() && !client->getUsername().empty()){
-        client->setRegistered(true);
+    if (!client->Registered && !client->Username.empty()){
+        client->Registered = true;
         WelcomeClient(fd);
         std::cout << "[IRCSERV]: fd " << fd << " Registration Complete !!" << std::endl;
     }
@@ -406,13 +385,13 @@ void Server::CmdUser( std::string param, int fd ){
     if (!client)
         return ;
 
-    if (!client->getPassAccepted()){
+    if (!client->PassAccepted){
         SendReply(fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not sent PASS\r\n");
         return ;
     }
 
-    if (client->getRegistered()){
-        SendReply(fd, ":" + std::string(SERVER_NAME) + " 462 " + client->getNickname() + " :You may not reregister\r\n");
+    if (client->Registered){
+        SendReply(fd, ":" + std::string(SERVER_NAME) + " 462 " + client->Nickname + " :You may not reregister\r\n");
         return ;
     }
 
@@ -437,12 +416,12 @@ void Server::CmdUser( std::string param, int fd ){
         return ;
     }
 
-    client->setUsername(username);
-    client->setRealname(realname);
+    client->Username = username;
+    client->Realname = realname;
     std::cout << "[IRCSERV]: fd " << fd << " Username set to " << username << std::endl;
 
-    if (!client->getRegistered() && !client->getNickname().empty() && !client->getUsername().empty()){
-        client->setRegistered(true);
+    if (!client->Registered && !client->Nickname.empty() && !client->Username.empty()){
+        client->Registered = true;
         WelcomeClient(fd);
         std::cout << "[IRCSERV]: fd " << fd << " Registration Complete !!" << std::endl;
     }
@@ -468,33 +447,29 @@ void Server::CmdPong( std::string param, int fd ){
         return ;
 
     (void)param;
-    client->setLastActivityTime(time(NULL));
+    client->LastActivityTime = time(NULL);
 }
 
 
 Client *Server::getClientByFd( int fd ){
-
-    for (size_t i = 0; i < Clients.size(); i++){
-        if (Clients[i].getFd() == fd)
-            return (&Clients[i]);
-    }
-    return (NULL);
+    if (Clients.count(fd))
+        return &Clients[fd];
+    return NULL;
 }
 
 void Server::SendReply( int fd, std::string msg ){
     Client *client = getClientByFd(fd);
     if (client){
-        client->appendOutBuffer(msg);
+        client->OutBuffer += msg;
     }
 }
 
 bool Server::NicknameInUse( std::string nickname ){
-
-    for (size_t i = 0; i < Clients.size(); i++){
-        if (Clients[i].getNickname() == nickname)
-            return (true);
+    for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
+        if (it->second.Nickname == nickname)
+            return true;
     }
-    return (false);
+    return false;
 }
 
 void Server::WelcomeClient( int fd ){
@@ -503,11 +478,11 @@ void Server::WelcomeClient( int fd ){
     if (!client)
         return ;
 
-    std::string nick = client->getNickname();
+    std::string nick = client->Nickname;
     std::string prefix = ":" + std::string(SERVER_NAME) + " ";
 
     SendReply(fd, prefix + "001 " + nick + " :Welcome to the IRC Network, " +
-        nick + "!" + client->getUsername() + "@" + client->getIpAddr() + "\r\n");
+        nick + "!" + client->Username + "@" + client->IpAddr + "\r\n");
     SendReply(fd, prefix + "002 " + nick + " :Your host is " + SERVER_NAME + ", running version 1.0\r\n");
     SendReply(fd, prefix + "003 " + nick + " :This server was created today\r\n");
     SendReply(fd, prefix + "004 " + nick + " " + SERVER_NAME + " 1.0 o o\r\n");

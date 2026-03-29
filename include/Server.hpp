@@ -7,6 +7,7 @@
 # include <cstdlib>
 # include <cerrno>
 # include <vector>
+# include <map>
 # include <sstream>
 
 # include <unistd.h>
@@ -36,12 +37,11 @@ class Server
 		int                                 listenSockFd;
 		std::string                         Password;
 		static bool                         Signal;
-		std::vector<Client>                 Clients;
+		std::map<int, Client>               Clients;
 		std::vector<struct pollfd>          Fd;
 
 
 		void SetupSocket( int Port );
-		void Socketreuse( int fd );
 		void SetNonBlocking( int fd );
 
 		void AcceptClient( void );
