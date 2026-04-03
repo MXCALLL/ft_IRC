@@ -4,7 +4,6 @@
 
 # include <string>
 # include <iostream>
-# include <ctime>
 
 class Client
 {
@@ -18,9 +17,7 @@ class Client
         std::string     OutBuffer;
         bool            PassAccepted;
         bool            Registered;
-        time_t          LastPingTime;
-        time_t          LastActivityTime;
-
+                
         Client();
         Client( int fd, std::string ip );
         ~Client();

@@ -52,11 +52,9 @@ class Server
         void HandleCommand( std::string cmd, int fd );
 
         /* Auth Commands */
-        void CmdPass( std::string param, int fd );
-        void CmdNick( std::string param, int fd );
-        void CmdUser( std::string param, int fd );
-        void CmdPing( std::string param, int fd );
-        void CmdPong( std::string param, int fd );
+        void CmdPass( std::string param, Client *client );
+        void CmdNick( std::string param, Client *client );
+        void CmdUser( std::string param, Client *client );
 
 		Client *getClientByFd( int fd );
 		void SendReply( int fd, std::string msg );
