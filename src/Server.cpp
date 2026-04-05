@@ -6,70 +6,6 @@ bool Server::Signal = false;
 
 Server::Server(){}
 
-Server::~Server(){
-    for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
-        close(it->first);
-    }
-    if (listenSockFd >= 0)
-        close(listenSockFd);
-}
-
-void Server::SignalHandler( int signum ){
-    (void)signum;
-    std::cout << "\n[IRCSERV]: Shutting Down !!" << std::endl;
-    Signal = true;
-}
-
-
-
-void Server::SetNonBlocking( int fd ){
-
-    if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0){
-        close(fd);
-        throw std::runtime_error("Error On Fcntl !!");
-    }
-}
-
-
-void Server::SetupSocket( int Port ){
-
-    listenSockFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (listenSockFd <  0)
-    {
-        close (listenSockFd);
-        throw std::runtime_error("Error On Socket !!");
-    }
-
-    int op = 1;
-    if (setsockopt(listenSockFd, SOL_SOCKET, SO_REUSEADDR, &op, sizeof(op)) < 0){
-        close(listenSockFd);
-        throw std::runtime_error("Error On Sockopt ADDR !!");
-    }
-
-    SetNonBlocking(listenSockFd);
-
-    sockaddr_in serv;
-    std::memset(&serv, 0, sizeof(serv));
-
-    serv.sin_family = AF_INET;
-    serv.sin_port = htons(Port);
-    serv.sin_addr.s_addr = inet_addr(ADDR);
-
-    if (bind(listenSockFd, reinterpret_cast<sockaddr *>(&serv), sizeof(serv)) < 0){
-
-        close(listenSockFd);
-        throw std::runtime_error("Error On Bind !!");
-    }
-
-    if (listen(listenSockFd, MAX_PENDING_CONNECTIONS) < 0){
-
-        close(listenSockFd);
-        throw std::runtime_error("Error On Listen !!");
-    }
-
-}
-
-
 Server::Server(int _Port, std::string _Password) : Port(_Port), Password(_Password){
 
     SetupSocket( this->Port );
@@ -83,6 +19,13 @@ Server::Server(int _Port, std::string _Password) : Port(_Port), Password(_Passwo
     std::cout << "[IRCSERV]: Listen on Port " << this->Port << std::endl;
 }
 
+Server::~Server(){
+    for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
+        close(it->first);
+    }
+    if (listenSockFd >= 0)
+        close(listenSockFd);
+}
 
 void Server::run( void ){
 
@@ -135,6 +78,58 @@ void Server::stop( void ){
     std::cout << "[IRCSERV]: Server Stopped !!" << std::endl;
 }
 
+void Server::SignalHandler( int signum ){
+    (void)signum;
+    std::cout << "\n[IRCSERV]: Shutting Down !!" << std::endl;
+    Signal = true;
+}
+
+void Server::SetNonBlocking( int fd ){
+
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0){
+        close(fd);
+        throw std::runtime_error("Error On Fcntl !!");
+    }
+}
+
+void Server::SetupSocket( int Port ){
+
+    listenSockFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (listenSockFd <  0)
+    {
+        close (listenSockFd);
+        throw std::runtime_error("Error On Socket !!");
+    }
+
+    int op = 1;
+    if (setsockopt(listenSockFd, SOL_SOCKET, SO_REUSEADDR, &op, sizeof(op)) < 0){
+        close(listenSockFd);
+        throw std::runtime_error("Error On Sockopt ADDR !!");
+    }
+
+    SetNonBlocking(listenSockFd);
+
+    sockaddr_in serv;
+    std::memset(&serv, 0, sizeof(serv));
+
+    serv.sin_family = AF_INET;
+    serv.sin_port = htons(Port);
+    serv.sin_addr.s_addr = inet_addr(ADDR);
+
+    if (bind(listenSockFd, reinterpret_cast<sockaddr *>(&serv), sizeof(serv)) < 0){
+
+        close(listenSockFd);
+        throw std::runtime_error("Error On Bind !!");
+    }
+
+    if (listen(listenSockFd, MAX_PENDING_CONNECTIONS) < 0){
+
+        close(listenSockFd);
+        throw std::runtime_error("Error On Listen !!");
+    }
+
+}
+
 void Server::AcceptClient( void ){
 
     sockaddr_in clientAddr;
@@ -161,22 +156,6 @@ void Server::AcceptClient( void ){
               << " on fd " << clientFd << std::endl;
 }
 
-void Server::DisconnectClient( int fd ){
-
-    std::cout << "[IRCSERV]: Client Disconnected fd " << fd << std::endl;
-
-    close(fd);
-
-    Clients.erase(fd);
-
-    for (size_t i = 0; i < Fd.size(); i++){
-        if (Fd[i].fd == fd){
-            Fd.erase(Fd.begin() + i);
-            break ;
-        }
-    }
-}
-
 void Server::ReceiveData( int fd ){
 
     char buffer[BUFFER_SIZE];
@@ -184,7 +163,13 @@ void Server::ReceiveData( int fd ){
 
     int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
 
-    if (bytes <= 0){
+    if (bytes == 0){
+        DisconnectClient(fd);
+        return ;
+    }
+    if (bytes < 0){
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return ;
         DisconnectClient(fd);
         return ;
     }
@@ -229,6 +214,21 @@ void Server::SendData( int fd ){
     }
 }
 
+void Server::DisconnectClient( int fd ){
+
+    std::cout << "[IRCSERV]: Client Disconnected fd " << fd << std::endl;
+
+    close(fd);
+
+    Clients.erase(fd);
+
+    for (size_t i = 0; i < Fd.size(); i++){
+        if (Fd[i].fd == fd){
+            Fd.erase(Fd.begin() + i);
+            break ;
+        }
+    }
+}
 
 void Server::HandleCommand( std::string cmd, int fd ){
 
@@ -275,154 +275,4 @@ void Server::HandleCommand( std::string cmd, int fd ){
         CmdUser(param, client);
     else if (!client->Registered)
         SendReply(fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not registered\r\n");
-}
-
-void Server::CmdPass( std::string param, Client *client ){    if (!client)
-        return ;
-
-    if (client->Registered){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 462 " + client->Nickname + " :You may not reregister\r\n");
-        return ;
-    }
-
-    if (param.empty()){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * PASS :Not enough parameters\r\n");
-        return ;
-    }
-
-    if (param != Password){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 464 * :Password incorrect\r\n");
-        return ;
-    }
-
-    client->PassAccepted = true;
-    std::cout << "[IRCSERV]: fd " << client->Fd << " Password Accepted !!" << std::endl;
-}
-
-
-void Server::CmdNick( std::string param, Client *client ){    if (!client)
-        return ;
-
-    if (!client->PassAccepted){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not sent PASS\r\n");
-        return ;
-    }
-
-    if (param.empty()){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 431 * :No nickname given\r\n");
-        return ;
-    }
-
-    if (!std::isalpha(param[0]) && param[0] != '_' && param[0] != '-'){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 432 * " + param + " :Erroneous nickname\r\n");
-        return ;
-    }
-
-    for (size_t i = 0; i < param.size(); i++){
-        if (!std::isalnum(param[i]) && param[i] != '_' && param[i] != '-'){
-            SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 432 * " + param + " :Erroneous nickname\r\n");
-            return ;
-        }
-    }
-
-    if (NicknameInUse(param)){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 433 * " + param + " :Nickname is already in use\r\n");
-        return ;
-    }
-
-    std::string oldNick = client->Nickname;
-    client->Nickname = param;
-    std::cout << "[IRCSERV]: fd " << client->Fd << " Nickname set to " << param << std::endl;
-
-    if (!client->Registered && !client->Username.empty()){
-        client->Registered = true;
-        WelcomeClient(client->Fd);
-        std::cout << "[IRCSERV]: fd " << client->Fd << " Registration Complete !!" << std::endl;
-    }
-}
-
-
-void Server::CmdUser( std::string param, Client *client ){    if (!client)
-        return ;
-
-    if (!client->PassAccepted){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not sent PASS\r\n");
-        return ;
-    }
-
-    if (client->Registered){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 462 " + client->Nickname + " :You may not reregister\r\n");
-        return ;
-    }
-
-    if (param.empty()){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * USER :Not enough parameters\r\n");
-        return ;
-    }
-
-    std::istringstream ss(param);
-    std::string username, mode, unused, realname;
-
-    ss >> username >> mode >> unused;
-
-    size_t colon = param.find(':');
-    if (colon != std::string::npos)
-        realname = param.substr(colon + 1);
-    else
-        realname = username;
-
-    if (username.empty()){
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * USER :Not enough parameters\r\n");
-        return ;
-    }
-
-    client->Username = username;
-    client->Realname = realname;
-    std::cout << "[IRCSERV]: fd " << client->Fd << " Username set to " << username << std::endl;
-
-    if (!client->Registered && !client->Nickname.empty() && !client->Username.empty()){
-        client->Registered = true;
-        WelcomeClient(client->Fd);
-        std::cout << "[IRCSERV]: fd " << client->Fd << " Registration Complete !!" << std::endl;
-    }
-}
-
-
-
-
-Client *Server::getClientByFd( int fd ){
-    if (Clients.count(fd))
-        return &Clients[fd];
-    return NULL;
-}
-
-void Server::SendReply( int fd, std::string msg ){
-    Client *client = getClientByFd(fd);
-    if (client){
-        client->OutBuffer += msg;
-    }
-}
-
-bool Server::NicknameInUse( std::string nickname ){
-    for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
-        if (it->second.Nickname == nickname)
-            return true;
-    }
-    return false;
-}
-
-void Server::WelcomeClient( int fd ){
-
-    Client *client = getClientByFd(fd);
-    if (!client)
-        return ;
-
-    std::string nick = client->Nickname;
-    std::string prefix = ":" + std::string(SERVER_NAME) + " ";
-
-    SendReply(fd, prefix + "001 " + nick + " :Welcome to the IRC Network, " +
-        nick + "!" + client->Username + "@" + client->IpAddr + "\r\n");
-    SendReply(fd, prefix + "002 " + nick + " :Your host is " + SERVER_NAME + ", running version 1.0\r\n");
-    SendReply(fd, prefix + "003 " + nick + " :This server was created today\r\n");
-    SendReply(fd, prefix + "004 " + nick + " " + SERVER_NAME + " 1.0 o o\r\n");
 }
