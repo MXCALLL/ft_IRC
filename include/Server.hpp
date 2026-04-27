@@ -1,5 +1,5 @@
-#ifndef SERVER_H
-# define SERVER_H
+#ifndef SERVER_HPP
+# define SERVER_HPP
 
 # include <iostream>
 # include <string>
@@ -9,18 +9,18 @@
 # include <vector>
 # include <map>
 # include <sstream>
-
 # include <unistd.h>
 # include <fcntl.h>
 # include <csignal>
 # include <sys/socket.h>
 # include <sys/types.h>
-# include <netinet/in.h> // sockaddr_in
+# include <netinet/in.h> //? sockaddr_in
 # include <poll.h>
-# include <arpa/inet.h> // init_addr()
+# include <arpa/inet.h> //? init_addr()
 # include "Client.hpp"
+# include "Channel.hpp"
 
-/* Server Config */
+//* Server Config *//
 # define ADDR "0.0.0.0"
 # define MAX_PENDING_CONNECTIONS 128
 # define BUFFER_SIZE 1024
@@ -28,8 +28,7 @@
 # define MAX_PORT 65535
 # define MAX_SYS_PORT 1023
 
-
-
+//*
 class Server
 {
 	private:
@@ -38,8 +37,8 @@ class Server
 		std::string                         Password;
 		static bool                         Signal;
 		std::map<int, Client>               Clients;
+		std::map<std::string, Channel>		Channels; //? Key is channel name (ex: "#general")
 		std::vector<struct pollfd>          Fd;
-
 
 		void SetupSocket( int Port );
 		void SetNonBlocking( int fd );
@@ -51,10 +50,15 @@ class Server
         void PerformTimeouts( void );
         void HandleCommand( std::string cmd, int fd );
 
-        /* Auth Commands */
+        //* Auth Commands *//
         void CmdPass( std::string param, Client *client );
         void CmdNick( std::string param, Client *client );
         void CmdUser( std::string param, Client *client );
+
+		//* Channel Commands *//
+		void CmdJoin( std::string param, Client *client );   //todo
+        void CmdKick( std::string param, Client *client );   //todo
+        void CmdInvite( std::string param, Client *client ); //todo
 
 		Client *getClientByFd( int fd );
 		void SendReply( int fd, std::string msg );
@@ -67,11 +71,10 @@ class Server
 		Server(int Port, std::string Password);
 		~Server();
 
-		/* Server Actions */
+		//* Server Actions *//
 		void run( void );
 		void stop ( void );
 		static void SignalHandler( int signum );
 };
-
 
 #endif
