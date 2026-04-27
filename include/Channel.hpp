@@ -3,7 +3,7 @@
 
 # include <string>
 # include <map>
-# include "Client.hpp" // We need the Client class to store references to users
+# include "Client.hpp"
 
 class Channel
 {
