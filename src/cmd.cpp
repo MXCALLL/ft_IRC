@@ -131,3 +131,23 @@ void Server::CmdInvite( std::string param, Client *client )
     // TODO: Implement INVITE logic here
     std::cout << "[IRCSERV]: INVITE command received from fd " << client->Fd << " with param: " << param << std::endl;
 }
+
+// ‹commands/mode-topic-privmsg›
+
+void    Server::CmdTopic( std::string param, Client *client)
+{
+    // ..
+    std::cout << "[IRCSERV]: TOPIC command received from fd " << client->Fd << " with param: " << param << std::endl;
+}
+
+void    Server::CmdPrivmsg( std::string param, Client *client)
+{
+    // ..
+    std::cout << "[IRCSERV]: PRIVMSG command received from fd " << client->Fd << " with param: " << param << std::endl;
+}
+
+void    Server::CmdMode( std::string param, Client *client)
+{
+    // ..
+    std::cout << "[IRCSERV]: MODE command received from fd " << client->Fd << " with param: " << param << std::endl;
+}

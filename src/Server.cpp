@@ -291,4 +291,11 @@ void Server::HandleCommand( std::string cmd, int fd )
 		CmdKick(param, client);  //todo
     else if (command == "INVITE")
 		CmdInvite(param, client);//todo
+	//! === this part below is for ‹mode-topic-privmsg› commands !//
+	else if (command == "TOPIC")
+		CmdTopic(param, client);
+	else if (command == "PRIVMSG")
+		CmdPrivmsg(param, client);
+	else if (command == "MODE")
+		CmdMode(param, client);
 }

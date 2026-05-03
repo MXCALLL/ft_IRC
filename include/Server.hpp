@@ -60,6 +60,10 @@ class Server
         void CmdKick( std::string param, Client *client );   //todo
         void CmdInvite( std::string param, Client *client ); //todo
 
+		void CmdMode( std::string param, Client *client);
+		void CmdTopic( std::string param, Client *client);
+		void CmdPrivmsg( std::string param, Client *client);
+
 		Client *getClientByFd( int fd );
 		void SendReply( int fd, std::string msg );
 		void WelcomeClient( int fd );
