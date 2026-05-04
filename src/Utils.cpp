@@ -1,50 +1,56 @@
-
 #include "../include/Server.hpp"
 
-Client *Server::getClientByFd( int fd ){
-    if (Clients.count(fd))
-        return &Clients[fd];
-    return NULL;
+Client *Server::getClientByFd( int fd )
+{
+	if (Clients.count(fd))
+		return &Clients[fd];
+	return NULL;
 }
 
-void Server::SendReply( int fd, std::string msg ){
-    Client *client = getClientByFd(fd);
-    if (client){
-        client->OutBuffer += msg;
-    }
+//? appends msg to the client's OutBuffer
+void Server::SendReply( int fd, std::string msg )
+{
+	Client *client = getClientByFd(fd);
+	if (client)
+		client->OutBuffer += msg;
 }
 
-bool Server::NicknameInUse( std::string nickname ){
-    for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
-        if (it->second.Nickname == nickname)
-            return true;
-    }
-    return false;
+bool Server::NicknameInUse( std::string nickname )
+{
+	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it)
+	{
+		if (it->second.Nickname == nickname)
+			return true;
+	}
+	return false;
 }
 
-void Server::WelcomeClient( int fd ){
+void Server::WelcomeClient( int fd )
+{
 
-    Client *client = getClientByFd(fd);
-    if (!client)
-        return ;
+	Client *client = getClientByFd(fd);
+	if (!client)
+		return ;
 
-    std::string nick = client->Nickname;
-    std::string prefix = ":" + std::string(SERVER_NAME) + " ";
+	std::string nick = client->Nickname;
+	std::string prefix = ":" + std::string(SERVER_NAME) + " ";
 
-    SendReply(fd, prefix + "001 " + nick + " :Welcome to the IRC Network, " +
-        nick + "!" + client->Username + "@" + client->IpAddr + "\r\n");
-    SendReply(fd, prefix + "002 " + nick + " :Your host is " + SERVER_NAME + ", running version 1.0\r\n");
-    SendReply(fd, prefix + "003 " + nick + " :This server was created today\r\n");
-    SendReply(fd, prefix + "004 " + nick + " " + SERVER_NAME + " 1.0 o o\r\n");
+	SendReply(fd, prefix + "001 " + nick + " :Welcome to the IRC Network, " +
+		nick + "!" + client->Username + "@" + client->IpAddr + "\r\n");
+	SendReply(fd, prefix + "002 " + nick + " :Your host is " + SERVER_NAME + ", running version 1.0\r\n");
+	SendReply(fd, prefix + "003 " + nick + " :This server was created today\r\n");
+	SendReply(fd, prefix + "004 " + nick + " " + SERVER_NAME + " 1.0 o o\r\n");
 }
 
-bool Server::isPrintable( std::string params){
+bool Server::isPrintable( std::string params)
+{
+		for (size_t i = 0; i < params.size(); i++)
+		{
+				if (!std::isprint(static_cast<unsigned char>(params[i])) && params[i] != '\r' && params[i] != '\n')
+				{
+						return (false);
+				}
+		}
 
-        for (size_t i = 0; i < params.size(); i++){
-                if (!std::isprint(static_cast<unsigned char>(params[i])) && params[i] != '\r' && params[i] != '\n'){
-                        return (false);
-                }
-        }
-
-        return (true);
+		return (true);
 }

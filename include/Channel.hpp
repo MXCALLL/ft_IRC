@@ -27,6 +27,7 @@ class Channel
 
 		//*  Getters *//
 		std::string getName() const;
+		std::string getClientList();
 
 		//* Client Management *//
 		void addClient(Client* client);

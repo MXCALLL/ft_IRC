@@ -37,7 +37,7 @@ class Server
 		std::string                         Password;
 		static bool                         Signal;
 		std::map<int, Client>               Clients;
-		std::map<std::string, Channel>		Channels; //? Key is channel name (ex: "#general")
+		std::map<std::string, Channel>		Channels; //? Key is channel name (ex: "#general"). value = Channel object
 		std::vector<struct pollfd>          Fd;
 
 		void SetupSocket( int Port );
@@ -56,7 +56,7 @@ class Server
         void CmdUser( std::string param, Client *client );
 
 		//* Channel Commands *//
-		void CmdJoin( std::string param, Client *client );   //todo
+		void CmdJoin( std::string param, Client *client );   //! done
         void CmdKick( std::string param, Client *client );   //todo
         void CmdInvite( std::string param, Client *client ); //todo
 
