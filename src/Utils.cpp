@@ -1,9 +1,21 @@
 #include "../include/Server.hpp"
 
+//? get client by fd
 Client *Server::getClientByFd( int fd )
 {
 	if (Clients.count(fd))
 		return &Clients[fd];
+	return NULL;
+}
+
+//? get client by nickname
+Client *Server::getClientByNickname(std::string nickname)
+{
+	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it)
+	{
+		if (it->second.Nickname == nickname)
+			return &it->second;
+	}
 	return NULL;
 }
 

@@ -77,7 +77,8 @@ void Server::CmdNick( std::string param, Client *client )
 	}
 }
 
-void Server::CmdUser( std::string param, Client *client ){
+void Server::CmdUser( std::string param, Client *client )
+{
 	if (!client)
 		return ;
 
@@ -158,7 +159,7 @@ void Server::CmdJoin(std::string param, Client *client)
 
 	ss >> channelName >> key;
 
-	if (channelName[0] != '#' && channelName[0] != '&')
+	if (channelName[0] != '#' && channelName[0] != '&') //todo mr.aouanni said that we should remove the check for '&'
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
 		return;
@@ -174,6 +175,12 @@ void Server::CmdJoin(std::string param, Client *client)
 	else
 	{
 		//todo => (Note: Later, Person 3's MODE checks for passwords/limits will go here)
+		//? check invite-only before joining
+		if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isInvited(client->Nickname))
+		{
+			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 473 " + client->Nickname + " " + channelName + " :Cannot join channel (+i)\r\n");
+			return;
+		}
 		Channels.at(channelName).addClient(client);
 		std::cout << "[IRCSERV]: " << client->Nickname << " joined existing channel " << channelName << "!" << std::endl;
 	}
@@ -188,23 +195,72 @@ void Server::CmdJoin(std::string param, Client *client)
 	std::string clientList = Channels.at(channelName).getClientList();
 
 	// 353 Format: :<server> 353 <nickname> = <channel> :<names list>
-    SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 353 " + client->Nickname + " = " + channelName + " :" + clientList + "\r\n");
-    
-    // 366 Format: :<server> 366 <nickname> <channel> :End of /NAMES list
-    SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
+	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 353 " + client->Nickname + " = " + channelName + " :" + clientList + "\r\n");
 	
+	// 366 Format: :<server> 366 <nickname> <channel> :End of /NAMES list
+	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
 }
 
 //? KICK Command
-void Server::CmdKick( std::string param, Client *client )
+void Server::CmdKick(std::string param, Client *client)
 {
 	// TODO: Implement KICK logic here
 	std::cout << "[IRCSERV]: KICK command received from fd " << client->Fd << " with param: " << param << std::endl;
 }
 
 //? INVITE Command
-void Server::CmdInvite( std::string param, Client *client )
+void Server::CmdInvite(std::string param, Client *client)
 {
-	// TODO: Implement INVITE logic here
-	std::cout << "[IRCSERV]: INVITE command received from fd " << client->Fd << " with param: " << param << std::endl;
+	//* param => Youssef #general
+	//* client => client that send the invitation (client object)
+
+	std::string	targetNick;
+	std::string	channelName;
+	std::istringstream ss(param);
+
+	ss >> targetNick >> channelName;
+
+	if (targetNick.empty() || channelName.empty())
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 " + client->Nickname + " INVITE :Not enough parameters\r\n");
+		return;
+	}
+
+	if (channelName[0] != '#' && channelName[0] != '&') //todo mr.aouanni said that we should remove the check for '&', but i'm not sure
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
+		return;
+	}
+
+	if (Channels.count(channelName) == 0)
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
+		return;
+	}
+	
+	if(!Channels.at(channelName).isClientInChannel(client->Fd))
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 442 " + client->Nickname + " " + channelName + " :You're not on that channel\r\n");
+		return;
+	}
+
+	if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isOperator(client->Fd))
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 482 " + client->Nickname + " " + channelName + " :You're not channel operator\r\n");
+		return;
+	}
+
+	if (!getClientByNickname(targetNick))
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 401 " + client->Nickname + " " + targetNick + " :No such nick/channel\r\n");
+		return;
+	}
+
+	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 341 " + client->Nickname + " " + targetNick + " " + channelName + "\r\n");
+	
+	SendReply(getClientByNickname(targetNick)->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
+
+	Channels.at(channelName).addToInviteList(targetNick);
+
+	//! NOTE: invite can bypass the limits (if an channle has a limit of users)
 }

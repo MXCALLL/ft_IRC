@@ -17,6 +17,12 @@ std::string Channel::getName() const
 	return _name;
 }
 
+//? check if this channel is invite only
+bool Channel::getInviteOnly() const
+{
+	return _inviteOnly;
+}
+
 //? Generates a space-separated list of all users in the channel, with operators prefixed by '@'
 std::string Channel::getClientList()
 {
@@ -57,9 +63,26 @@ bool Channel::isClientInChannel(int fd)
 	return _clients.count(fd) > 0;
 }
 
+//? add a client to invite list
+void Channel::addToInviteList(std::string nickname)
+{
+	_inviteList.push_back(nickname);
+}
+
+//? Checks if a specific client is currently in the invited list
+bool Channel::isInvited(std::string nickname)
+{
+	for (size_t i = 0; i < _inviteList.size(); ++i)
+	{
+		if (nickname == _inviteList.at(i))
+			return true;
+	}
+	return false;
+}
+
 //! --- Operator Management ---
 
-//? Checks if a specific client is currently in the channel
+//? Checks if a specific operator is currently in the channel
 void Channel::addOperator(Client* client)
 {
 	if (client)

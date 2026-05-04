@@ -61,6 +61,7 @@ class Server
         void CmdInvite( std::string param, Client *client ); //todo
 
 		Client *getClientByFd( int fd );
+		Client *getClientByNickname(std::string nickname);
 		void SendReply( int fd, std::string msg );
 		void WelcomeClient( int fd );
 		bool NicknameInUse( std::string nickname );

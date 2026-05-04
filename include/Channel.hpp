@@ -3,6 +3,7 @@
 
 # include <string>
 # include <map>
+# include <vector>
 # include "Client.hpp"
 
 class Channel
@@ -19,6 +20,7 @@ class Channel
 		// We want to reference the exact same Client object that the Server is managing.
 		std::map<int, Client*>      _clients;         //? Map of regular users (Key: fd, Value: Client pointer)
 		std::map<int, Client*>      _operators;       //? Map of channel operators (Key: fd, Value: Client pointer)
+		std::vector<std::string>	_inviteList;      //? vector of invite list of clients
 
 	public:
 		//* Constructor & Destructor *//
@@ -27,12 +29,15 @@ class Channel
 
 		//*  Getters *//
 		std::string getName() const;
+		bool getInviteOnly() const;
 		std::string getClientList();
+		bool isInvited(std::string nickname);
 
 		//* Client Management *//
 		void addClient(Client* client);
 		void removeClient(int fd);
 		bool isClientInChannel(int fd);
+		void addToInviteList(std::string nickname);
 
 		//* Operator Management *//
 		void addOperator(Client* client);
