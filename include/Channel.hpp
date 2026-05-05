@@ -38,6 +38,7 @@ class Channel
 		void removeClient(int fd);
 		bool isClientInChannel(int fd);
 		void addToInviteList(std::string nickname);
+		Client *getClientByNick(std::string nickname);
 
 		//* Operator Management *//
 		void addOperator(Client* client);

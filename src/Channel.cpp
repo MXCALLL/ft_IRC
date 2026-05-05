@@ -69,6 +69,17 @@ void Channel::addToInviteList(std::string nickname)
 	_inviteList.push_back(nickname);
 }
 
+//? get a client from current channel by nickname
+Client* Channel::getClientByNick(std::string nickname)
+{
+    for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        if (it->second->Nickname == nickname)
+            return it->second;
+    }
+    return NULL;
+}
+
 //? Checks if a specific client is currently in the invited list
 bool Channel::isInvited(std::string nickname)
 {
@@ -104,7 +115,7 @@ bool Channel::isOperator(int fd)
 //! --- Core Action ---
 
 //? Forwards a message to every client in the channel except the sender
-void Channel::broadcastMessage(std::string msg, int senderFd)
+void Channel::broadcastMessage(std::string msg, int senderFd) //* -1 = send to ALL including sender
 {
 	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
