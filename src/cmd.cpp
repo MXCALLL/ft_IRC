@@ -204,8 +204,8 @@ void Server::CmdJoin(std::string param, Client *client)
 //? KICK Command
 void Server::CmdKick( std::string param, Client *client )
 {
-	//* param =>
-	//* client => 
+	//* param => KICK #general Youssef :stop spamming
+	//* client => the operator that want to kick the user from the channle (operator object)
 
 	//!pseudocode:
 	/*
