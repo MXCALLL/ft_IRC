@@ -203,86 +203,60 @@ void Server::CmdJoin(std::string param, Client *client)
 
 //? KICK Command
 void Server::CmdKick( std::string param, Client *client )
-{
-	//* param => KICK #general Youssef :stop spamming
-	//* client => the operator that want to kick the user from the channle (operator object)
-
-	//!pseudocode:
-	/*
-	* Validate the executor is registered
-	* Validate enough params exist
-	* Validate the channel exists
-	* Validate the executor is IN the channel
-	* Validate the executor is an OPERATOR in the channel
-	* Validate the target nick exists on the server
-	* Validate the target is IN the channel
-	* Broadcast the KICK message to everyone in the channel (including the kicked user so their client knows to leave)
-	* Remove the target from the channel
-	*/
-
-	if (!client)
-		return ;
-
-	// --- Parse: KICK #channel target [:reason] ---
-	std::istringstream ss(param);
-	std::string channelName, targetNick, reason;
+{	
+	std::istringstream	ss(param);
+	std::string			channelName;
+	std::string			targetNick;
+	std::string			reason;
+	size_t				colon;
+	Client				*target;
 
 	ss >> channelName >> targetNick;
 
-	// Extract optional reason after ':'
-	size_t colon = param.find(':');
+	colon = param.find(':');
 	if (colon != std::string::npos)
 		reason = param.substr(colon + 1);
 	else
-		reason = "Kicked";
+		reason = client->Nickname;
 
-	// 1. Enough params?
 	if (channelName.empty() || targetNick.empty())
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 " + client->Nickname + " KICK :Not enough parameters\r\n");
 		return ;
 	}
-
-	// 2. Channel exists?
-	if (Channels.find(channelName) == Channels.end())
+	if (!Channels.count(channelName))
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
 		return ;
 	}
 
-	Channel &channel = Channels[channelName];
-
-	// 3. Executor is in the channel?
-	if (!channel.isClientInChannel(client->Fd))
+	Channel &channel = Channels.at(channelName);
+	
+	if(!channel.isClientInChannel(client->Fd))
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 442 " + client->Nickname + " " + channelName + " :You're not on that channel\r\n");
 		return ;
 	}
-
-	// 4. Executor is an operator?
-	if (!channel.isOperator(client->Fd))
+	if(!channel.isOperator(client->Fd))
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 482 " + client->Nickname + " " + channelName + " :You're not channel operator\r\n");
 		return ;
 	}
-
-	// 5. Target exists in the channel?
-	Client *target = channel.getClientByNick(targetNick);
+	if (!getClientByNickFromServer(targetNick))
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 401 " + client->Nickname + " " + targetNick + " :No such nick/channel\r\n");
+		return ;
+	}
+	
+	target = channel.getClientByNickFromChannel(targetNick);
+	
 	if (!target)
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 441 " + client->Nickname + " " + targetNick + " " + channelName + " :They aren't on that channel\r\n");
 		return ;
 	}
-
-	// 6. Broadcast KICK to everyone in the channel (including the target)
-	// Format: :kicker!user@host KICK #channel target :reason
-	std::string kickMsg = ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " KICK " + channelName + " " + targetNick + " :" + reason + "\r\n";
-
-	channel.broadcastMessage(kickMsg, -1); // -1 = send to ALL including sender
-
-	// 7. Remove target from channel
+	channel.broadcastMessage(":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " KICK " + channelName + " " + targetNick + " :" + reason + "\r\n", -1);
 	channel.removeClient(target->Fd);
-
 	std::cout << "[IRCSERV]: " << client->Nickname << " kicked " << targetNick << " from " << channelName << " (" << reason << ")" << std::endl;
 }
 
@@ -328,7 +302,7 @@ void Server::CmdInvite(std::string param, Client *client)
 		return;
 	}
 
-	if (!getClientByNickname(targetNick))
+	if (!getClientByNickFromServer(targetNick))
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 401 " + client->Nickname + " " + targetNick + " :No such nick/channel\r\n");
 		return;
@@ -336,7 +310,7 @@ void Server::CmdInvite(std::string param, Client *client)
 
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 341 " + client->Nickname + " " + targetNick + " " + channelName + "\r\n");
 	
-	SendReply(getClientByNickname(targetNick)->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
+	SendReply(getClientByNickFromServer(targetNick)->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
 
 	Channels.at(channelName).addToInviteList(targetNick);
 

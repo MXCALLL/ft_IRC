@@ -70,7 +70,7 @@ void Channel::addToInviteList(std::string nickname)
 }
 
 //? get a client from current channel by nickname
-Client* Channel::getClientByNick(std::string nickname)
+Client* Channel::getClientByNickFromChannel(std::string nickname)
 {
     for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
     {

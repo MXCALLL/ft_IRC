@@ -274,7 +274,7 @@ void Server::HandleCommand( std::string cmd, int fd )
 
 	Client *client = getClientByFd(fd);
 	if (!client)
-		return;
+		return ;
 
 	if (command == "PASS")
 		CmdPass(param, client);
@@ -286,9 +286,9 @@ void Server::HandleCommand( std::string cmd, int fd )
 		SendReply(fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not registered\r\n");
 	//! === this part below is for (join/kick/invite) commands !//
 	else if (command == "JOIN")
-		CmdJoin(param, client);  //todo
+		CmdJoin(param, client);  //!done
     else if (command == "KICK")
 		CmdKick(param, client);  //todo
     else if (command == "INVITE")
-		CmdInvite(param, client);//todo
+		CmdInvite(param, client);//!done
 }

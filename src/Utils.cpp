@@ -8,8 +8,8 @@ Client *Server::getClientByFd( int fd )
 	return NULL;
 }
 
-//? get client by nickname
-Client *Server::getClientByNickname(std::string nickname)
+//? get client by nickname from server's list clients
+Client *Server::getClientByNickFromServer(std::string nickname)
 {
 	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it)
 	{
@@ -56,13 +56,10 @@ void Server::WelcomeClient( int fd )
 
 bool Server::isPrintable( std::string params)
 {
-		for (size_t i = 0; i < params.size(); i++)
-		{
-				if (!std::isprint(static_cast<unsigned char>(params[i])) && params[i] != '\r' && params[i] != '\n')
-				{
-						return (false);
-				}
-		}
-
-		return (true);
+	for (size_t i = 0; i < params.size(); i++)
+	{
+		if (!std::isprint(static_cast<unsigned char>(params[i])) && params[i] != '\r' && params[i] != '\n')
+			return (false);
+	}
+	return (true);
 }
