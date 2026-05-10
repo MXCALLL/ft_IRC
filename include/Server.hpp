@@ -57,8 +57,8 @@ class Server
 
 		//* Channel Commands *//
 		void CmdJoin( std::string param, Client *client );   //! done
-        void CmdKick( std::string param, Client *client );   //todo
-        void CmdInvite( std::string param, Client *client ); //todo
+        void CmdKick( std::string param, Client *client );   //! done
+        void CmdInvite( std::string param, Client *client ); //! done
 
 		Client *getClientByFd( int fd );
 		Client *getClientByNickFromServer(std::string nickname);
