@@ -28,7 +28,7 @@
 # define MAX_PORT 65535
 # define MAX_SYS_PORT 1023
 
-//*
+//* Server class
 class Server
 {
 	private:
