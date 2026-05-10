@@ -278,13 +278,7 @@ void Server::CmdInvite(std::string param, Client *client)
 		return;
 	}
 
-	if (channelName[0] != '#' && channelName[0] != '&') //todo mr.aouanni said that we should remove the check for '&', but i'm not sure
-	{
-		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
-		return;
-	}
-
-	if (Channels.count(channelName) == 0)
+	if (!Channels.count(channelName))
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
 		return;

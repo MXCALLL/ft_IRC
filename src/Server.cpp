@@ -292,7 +292,7 @@ void Server::HandleCommand( std::string cmd, int fd )
 	else if (command == "JOIN")
 		CmdJoin(param, client);  //!done
     else if (command == "KICK")
-		CmdKick(param, client);  //todo
+		CmdKick(param, client);  //!done
     else if (command == "INVITE")
 		CmdInvite(param, client);//!done
 }
