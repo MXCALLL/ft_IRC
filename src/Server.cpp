@@ -222,12 +222,19 @@ void Server::SendData( int fd ){
 	}
 }
 
+//? Removes a client from the server, cleans them out of every channel they were in (and deletes empty channels), then closes their socket.
 void Server::DisconnectClient( int fd )
 {
 	std::cout << "[IRCSERV]: Client Disconnected fd " << fd << std::endl;
 
-	for (std::map<std::string, Channel>::iterator it = Channels.begin(); it != Channels.end(); ++it)
+	for (std::map<std::string, Channel>::iterator it = Channels.begin(); it != Channels.end();)
+	{
 		it->second.removeClient(fd);
+		if (it->second.isEmpty())
+			it = Channels.erase(it);
+		else
+			++it;
+	}
 
 	Clients.erase(fd);
 

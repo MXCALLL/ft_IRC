@@ -91,6 +91,12 @@ bool Channel::isInvited(std::string nickname)
 	return false;
 }
 
+//? check if the clients map is emtpy
+bool Channel::isEmpty() const
+{
+	return _clients.empty();
+}
+
 //! --- Operator Management ---
 
 //? Checks if a specific operator is currently in the channel

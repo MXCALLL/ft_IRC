@@ -32,6 +32,7 @@ class Channel
 		bool getInviteOnly() const;
 		std::string getClientList();
 		bool isInvited(std::string nickname);
+		bool isEmpty() const;
 
 		//* Client Management *//
 		void addClient(Client* client);

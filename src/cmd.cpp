@@ -256,7 +256,12 @@ void Server::CmdKick( std::string param, Client *client )
 		return ;
 	}
 	channel.broadcastMessage(":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " KICK " + channelName + " " + targetNick + " :" + reason + "\r\n", -1);
+
 	channel.removeClient(target->Fd);
+
+	if (channel.isEmpty())
+		Channels.erase(channelName);
+
 	std::cout << "[IRCSERV]: " << client->Nickname << " kicked " << targetNick << " from " << channelName << " (" << reason << ")" << std::endl;
 }
 
