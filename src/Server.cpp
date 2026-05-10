@@ -222,20 +222,24 @@ void Server::SendData( int fd ){
 	}
 }
 
-void Server::DisconnectClient( int fd ){
-
+void Server::DisconnectClient( int fd )
+{
 	std::cout << "[IRCSERV]: Client Disconnected fd " << fd << std::endl;
 
-	close(fd);
+	for (std::map<std::string, Channel>::iterator it = Channels.begin(); it != Channels.end(); ++it)
+		it->second.removeClient(fd);
 
 	Clients.erase(fd);
 
-	for (size_t i = 0; i < Fd.size(); i++){
-		if (Fd[i].fd == fd){
+	for (size_t i = 0; i < Fd.size(); i++)
+	{
+		if (Fd[i].fd == fd)
+		{
 			Fd.erase(Fd.begin() + i);
 			break ;
 		}
 	}
+	close(fd);
 }
 
 //* The Execution
