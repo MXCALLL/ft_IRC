@@ -129,36 +129,11 @@ void Server::CmdUser( std::string param, Client *client )
 	}
 }
 
-//? JOIN command
-void Server::CmdJoin(std::string param, Client *client)
+//? Helper fun of JOIN Cmd
+void Server::JoinOneChannel(std::string channelName, std::string key, Client *client)
 {
-	//* param  => "#general password"
-	//* client => client that want to join this channle (client object)
-
-	//! pseudocode:
-	/*
-	?1. Parse: extract channel name (and optional key) from param    => done
-	?2. Validate: does it start with '#' or '&'?                     => done
-	3. Check password if channel has one (skip for now, add later)   => //todo
-	?4 Create OR Join:                                               => done
-	   ?- Not exists → create it, add client, make them operator     => done
-	   ?- Exists → add client (check invite-only later)              => done
-	?5. Broadcast the JOIN message to the channel                    => done
-	?6. Send RPL_NAMREPLY (353) + RPL_ENDOFNAMES (366)               => done
-	*/
-
-	if (param.empty())
-	{
-		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 " + client->Nickname + " JOIN :Not enough parameters\r\n");
-		return;
-	}
-
-	std::string	channelName;
-	std::string	key;
-	std::istringstream ss(param);
-
-	ss >> channelName >> key;
-
+	if (channelName.empty())
+		return ;
 	if (channelName[0] != '#' && channelName[0] != '&') //todo mr.aouanni said that we should remove the check for '&'
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
@@ -185,8 +160,7 @@ void Server::CmdJoin(std::string param, Client *client)
 		std::cout << "[IRCSERV]: " << client->Nickname << " joined existing channel " << channelName << "!" << std::endl;
 	}
 
-	std::string userPrefix = ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr;
-	std::string joinMsg = userPrefix + " JOIN :" + channelName + "\r\n";
+	std::string joinMsg = ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " JOIN :" + channelName + "\r\n";
 
 	SendReply(client->Fd, joinMsg);
 
@@ -199,6 +173,40 @@ void Server::CmdJoin(std::string param, Client *client)
 	
 	// 366 Format: :<server> 366 <nickname> <channel> :End of /NAMES list
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
+
+}
+
+//? JOIN command
+void Server::CmdJoin(std::string param, Client *client)
+{
+	if (param.empty())
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 " + client->Nickname + " JOIN :Not enough parameters\r\n");
+		return;
+	}
+
+	std::istringstream			ss(param);
+	std::string					channelList;
+	std::string					channelName;
+	std::vector<std::string>	keys;
+	std::string					keyList;
+	std::string					singleKey;
+	
+	ss >> channelList >> keyList;
+	
+	std::istringstream	css(channelList);
+	std::istringstream	kss(keyList);
+
+	while (std::getline(kss, singleKey, ','))
+		keys.push_back(singleKey);
+
+	int i = 0;
+	while (std::getline(css, channelName, ','))
+	{
+		std::string currentKey = (i < (int)keys.size()) ? keys[i]: "";
+		JoinOneChannel(channelName, currentKey, client);
+		++i;
+	}
 }
 
 //? KICK Command

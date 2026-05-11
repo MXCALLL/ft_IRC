@@ -57,6 +57,7 @@ class Server
 
 		//* Channel Commands *//
 		void CmdJoin( std::string param, Client *client );   //! done
+		void JoinOneChannel(std::string channelName, std::string key, Client *client); //? helper fun for JOIN
         void CmdKick( std::string param, Client *client );   //! done
         void CmdInvite( std::string param, Client *client ); //! done
 
