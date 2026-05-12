@@ -231,7 +231,7 @@ void Server::DisconnectClient( int fd )
 	{
 		it->second.removeClient(fd);
 		if (it->second.isEmpty())
-			it = Channels.erase(it);
+			Channels.erase(it++);
 		else
 			++it;
 	}
