@@ -19,6 +19,7 @@ void Server::CmdPass( std::string param, Client *client )
 
 	if (param != Password)
 	{
+		client->PassAccepted = false; //? I add this line here to fix the bug of the last password sent is used for verification, but still not confermed by (muidbell)
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 464 * :Password incorrect\r\n");
 		return ;
 	}
@@ -132,6 +133,7 @@ void Server::CmdUser( std::string param, Client *client )
 //? Helper fun of JOIN Cmd
 void Server::JoinOneChannel(std::string channelName, std::string key, Client *client)
 {
+	(void)key;
 	if (channelName.empty())
 		return ;
 	if (channelName[0] != '#' && channelName[0] != '&') //todo mr.aouanni said that we should remove the check for '&'
@@ -149,7 +151,18 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 	}
 	else
 	{
-		//todo => (Note: Later, Person 3's MODE checks for passwords/limits will go here)
+		//? check passwords before joining (MODE +k)
+		if (!Channels.at(channelName).getKey().empty() && key != Channels.at(channelName).getKey())
+		{
+			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 475 " + client->Nickname + " " + channelName + " :Cannot join channel (+k)\r\n");
+			return ;
+		}
+		//? check limits before joining (MODE +l)
+		if (Channels.at(channelName).getChannelUserLimit() > 0 && Channels.at(channelName).getClientCount() >= Channels.at(channelName).getChannelUserLimit()) //?why not just use the seconde conditions (check if clients count is greater or equal to userlimit)
+		{
+			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 471 " + client->Nickname + " " + channelName + " :Cannot join channel (+l)\r\n");
+			return ;
+		}
 		//? check invite-only before joining
 		if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isInvited(client->Nickname))
 		{
