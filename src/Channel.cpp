@@ -41,6 +41,24 @@ std::string Channel::getClientList()
 	return list;
 }
 
+//? get clients number
+size_t Channel::getClientCount() const
+{
+	return _clients.size();
+}
+
+//? get the channel's key (password)
+std::string Channel::getKey() const
+{
+	return _key;
+}
+
+//? get users limit in current channel
+size_t Channel::getChannelUserLimit() const
+{
+	return _userLimit;
+}
+
 //! --- Client Management ---
 
 //? Adds a new client to the channel's client map
