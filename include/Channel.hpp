@@ -30,6 +30,9 @@ class Channel
 		//*  Getters *//
 		std::string getName() const;
 		bool getInviteOnly() const;
+		size_t getClientCount() const;
+		std::string getKey() const;
+		size_t getChannelUserLimit() const;
 		std::string getClientList();
 		bool isInvited(std::string nickname);
 		bool isEmpty() const;
