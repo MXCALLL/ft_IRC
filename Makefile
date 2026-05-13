@@ -1,10 +1,10 @@
 CPP = c++
-CPPFLAGS = -Wall -Wextra -Werror -std=c++98
+CPPFLAGS = -std=c++98 -Wall -Wextra -Werror
 
 SRCDIR = src
 INCDIR = include
 
-SRC = main.cpp $(SRCDIR)/Server.cpp $(SRCDIR)/Client.cpp $(SRCDIR)/Utils.cpp $(SRCDIR)/cmd.cpp
+SRC = main.cpp $(SRCDIR)/Server.cpp $(SRCDIR)/Client.cpp $(SRCDIR)/Utils.cpp $(SRCDIR)/cmd.cpp  $(SRCDIR)/Channel.cpp 
 OBJ = $(SRC:.cpp=.o)
 NAME = ircserv
 HEADER = $(INCDIR)/Server.hpp $(INCDIR)/Client.hpp
