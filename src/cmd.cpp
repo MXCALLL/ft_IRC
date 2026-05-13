@@ -133,7 +133,6 @@ void Server::CmdUser( std::string param, Client *client )
 //? Helper fun of JOIN Cmd
 void Server::JoinOneChannel(std::string channelName, std::string key, Client *client)
 {
-	(void)key;
 	if (channelName.empty())
 		return ;
 	if (channelName[0] != '#' && channelName[0] != '&') //todo mr.aouanni said that we should remove the check for '&'
