@@ -16,6 +16,7 @@ void Server::CmdPass( std::string param, Client *client ){
     }
 
     if (param != Password){
+        client->PassAccepted = false;
         SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 464 * :Password incorrect\r\n");
         return ;
     }

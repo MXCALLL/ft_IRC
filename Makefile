@@ -12,7 +12,7 @@ HEADER = $(INCDIR)/Server.hpp $(INCDIR)/Client.hpp
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	$(CPP) $(OBJ) $(CPPFLAGS) -o $(NAME)
+	$(CPP) $(OBJ) -o $(NAME)
 
 %.o: %.cpp $(HEADER)
 	$(CPP) $(CPPFLAGS) -I$(INCDIR) -c $< -o $@
@@ -24,5 +24,3 @@ fclean: clean
 	rm -rf $(NAME)
 
 re: fclean all
-
-.PHONY: all clean fclean re
