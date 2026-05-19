@@ -22,11 +22,7 @@ Server::Server(int _Port, std::string _Password) : Port(_Port), Password(_Passwo
 //* destructor:
 Server::~Server()
 {
-	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it)
-		close(it->first);
-
-	if (listenSockFd >= 0)
-		close(listenSockFd);
+	stop();
 }
 
 //* The Main Loop
@@ -54,26 +50,47 @@ void Server::run( void )
 		if (Signal)
 			break ;
 
-		for (size_t i = 0; i < Fd.size(); i++)
+		for (size_t i = 0; i < Fd.size(); )
 		{
+			int currentFd = Fd[i].fd;
+
+			//? Handle error/hangup conditions first
+			if (Fd[i].revents & (POLLERR | POLLHUP | POLLNVAL))
+			{
+				if (currentFd != listenSockFd)
+					DisconnectClient(currentFd);
+				else
+					++i;
+				continue;
+			}
+
 			if (Fd[i].revents & POLLIN)
 			{
-				if (Fd[i].fd == listenSockFd)
+				if (currentFd == listenSockFd)
 					AcceptClient();
 				else
-					ReceiveData(Fd[i].fd);
+					ReceiveData(currentFd);
 			}
-			if (Fd[i].revents & POLLOUT)
-				SendData(Fd[i].fd);
+
+			//? Check if client was disconnected during ReceiveData
+			if (!Clients.count(currentFd) && currentFd != listenSockFd)
+				continue; //? Fd vector shifted, don't increment i
+
+			if (i < Fd.size() && (Fd[i].revents & POLLOUT))
+				SendData(currentFd);
+
+			//? Check if client was disconnected during SendData
+			if (!Clients.count(currentFd) && currentFd != listenSockFd)
+				continue;
+
+			++i;
 		}
 	}
-	stop();
 }
 
 void Server::stop( void ){
-	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
+	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it)
 		close(it->first);
-	}
 	Clients.clear();
 	Fd.clear();
 	if (listenSockFd >= 0){
@@ -174,10 +191,8 @@ void Server::ReceiveData( int fd )
 		DisconnectClient(fd);
 		return ;
 	}
-	if (bytes < 0)
-	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return ;
+	if (bytes < 0){
+
 		DisconnectClient(fd);
 		return ;
 	}
@@ -215,10 +230,7 @@ void Server::SendData( int fd ){
 	if (bytes > 0){
 		client->OutBuffer.erase(0, bytes);
 	} else if (bytes < 0) {
-		if (errno != EWOULDBLOCK && errno != EAGAIN) {
-			std::cerr << "[IRCSERV]: Send error on fd " << fd << std::endl;
-			DisconnectClient(fd);
-		}
+		DisconnectClient(fd);
 	}
 }
 
