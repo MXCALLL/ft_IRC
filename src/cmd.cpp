@@ -135,7 +135,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 {
 	if (channelName.empty())
 		return ;
-	if (channelName[0] != '#' && channelName[0] != '&') //todo mr.aouanni said that we should remove the check for '&'
+	if (channelName.size() < 2 || (channelName[0] != '#' && channelName[0] != '&')) //! I add a check for JOIN # if the user enter a empty channel name! should I handle it?
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
 		return;
