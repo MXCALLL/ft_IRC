@@ -22,7 +22,6 @@
 
 //* Server Config *//
 # define ADDR "0.0.0.0"
-# define MAX_PENDING_CONNECTIONS 128
 # define BUFFER_SIZE 1024
 # define SERVER_NAME "ircserv"
 # define MAX_PORT 65535
@@ -47,7 +46,6 @@ class Server
 		void ReceiveData( int fd );
         void SendData( int fd );
         void DisconnectClient( int fd );
-        void PerformTimeouts( void );
         void HandleCommand( std::string cmd, int fd );
 
         //* Auth Commands *//

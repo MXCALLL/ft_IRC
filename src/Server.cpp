@@ -20,8 +20,8 @@ Server::Server(int _Port, std::string _Password) : Port(_Port), Password(_Passwo
 }
 
 //* destructor:
-Server::~Server()
-{
+Server::~Server(){
+
 	stop();
 }
 
@@ -34,29 +34,29 @@ void Server::run( void )
 
 	while (!Signal)
 	{
-		for (size_t i = 1; i < Fd.size(); i++)
-		{
+		for (size_t i = 1; i < Fd.size(); ++i){
+
 			Client *client = getClientByFd(Fd[i].fd);
 			if (client && !client->OutBuffer.empty())
-				Fd[i].events |= POLLOUT;
+				Fd[i].events = POLLIN | POLLOUT;
 			else
-				Fd[i].events &= ~POLLOUT;
+				Fd[i].events = POLLIN;
 		}
 
-		int ret = poll(&Fd[0], Fd.size(), 1000);
+		if (poll(&Fd[0], Fd.size(), 1000) < 0){
 
-		if (ret < 0 && !Signal)
+			if (Signal)
+				break ;
 			throw std::runtime_error("Error On Poll !!");
-		if (Signal)
-			break ;
+		}
 
-		for (size_t i = 0; i < Fd.size(); )
-		{
+		for (size_t i = 0; i < Fd.size(); ){
+
 			int currentFd = Fd[i].fd;
 
 			//? Handle error/hangup conditions first
-			if (Fd[i].revents & (POLLERR | POLLHUP | POLLNVAL))
-			{
+			if (Fd[i].revents & (POLLERR | POLLHUP | POLLNVAL)){
+
 				if (currentFd != listenSockFd)
 					DisconnectClient(currentFd);
 				else
@@ -64,8 +64,8 @@ void Server::run( void )
 				continue;
 			}
 
-			if (Fd[i].revents & POLLIN)
-			{
+			if (Fd[i].revents & POLLIN){
+
 				if (currentFd == listenSockFd)
 					AcceptClient();
 				else
@@ -144,7 +144,7 @@ void Server::SetupSocket( int Port ){
 		throw std::runtime_error("Error On Bind !!");
 	}
 
-	if (listen(listenSockFd, MAX_PENDING_CONNECTIONS) < 0){
+	if (listen(listenSockFd, SOMAXCONN) < 0){
 
 		close(listenSockFd);
 		throw std::runtime_error("Error On Listen !!");
