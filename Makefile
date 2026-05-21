@@ -7,7 +7,7 @@ INCDIR = include
 SRC = main.cpp $(SRCDIR)/Server.cpp $(SRCDIR)/Client.cpp $(SRCDIR)/Utils.cpp $(SRCDIR)/cmd.cpp  $(SRCDIR)/Channel.cpp 
 OBJ = $(SRC:.cpp=.o)
 NAME = ircserv
-HEADER = $(INCDIR)/Server.hpp $(INCDIR)/Client.hpp
+HEADER = $(INCDIR)/Server.hpp $(INCDIR)/Client.hpp $(INCDIR)/Channel.hpp
 
 all: $(NAME)
 

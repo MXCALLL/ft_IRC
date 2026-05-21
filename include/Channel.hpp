@@ -40,6 +40,19 @@ class Channel
 
 		//* Core Action *//
 		void broadcastMessage(std::string msg, int senderFd);
+
+		// added by obensarj
+		std::string getTopic() const;
+		bool		isTopicRestricted() const;
+		void		setTopicRestricted(bool val);
+		void		setTopic(std::string const newtopic);
+
+		bool		isInviteOnly() const;
+		void		setInviteOnly(bool val);
+		std::string	getKey() const;
+		void		setKey(std::string key);
+		size_t		getUserLimit() const;
+		void		setUserLimit(size_t limit);
 };
 
 #endif
