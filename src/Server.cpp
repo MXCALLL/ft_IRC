@@ -2,10 +2,8 @@
 
 bool Server::Signal = false;
 
-//* default constructor:
 Server::Server(){}
 
-//* parameterized constructor:
 Server::Server(int _Port, std::string _Password) : Port(_Port), Password(_Password)
 {
 	SetupSocket( this->Port );
@@ -19,17 +17,11 @@ Server::Server(int _Port, std::string _Password) : Port(_Port), Password(_Passwo
 	std::cout << "[IRCSERV]: Listen on Port " << this->Port << std::endl;
 }
 
-//* destructor:
-Server::~Server()
-{
-	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it)
-		close(it->first);
+Server::~Server(){
 
-	if (listenSockFd >= 0)
-		close(listenSockFd);
+	stop();
 }
 
-//* The Main Loop
 void Server::run( void )
 {
 
@@ -38,42 +30,60 @@ void Server::run( void )
 
 	while (!Signal)
 	{
-		for (size_t i = 1; i < Fd.size(); i++)
-		{
+		for (size_t i = 1; i < Fd.size(); ++i){
+
 			Client *client = getClientByFd(Fd[i].fd);
 			if (client && !client->OutBuffer.empty())
-				Fd[i].events |= POLLOUT;
+				Fd[i].events = POLLIN | POLLOUT;
 			else
-				Fd[i].events &= ~POLLOUT;
+				Fd[i].events = POLLIN;
 		}
 
-		int ret = poll(&Fd[0], Fd.size(), 1000);
+		if (poll(&Fd[0], Fd.size(), 1000) < 0){
 
-		if (ret < 0 && !Signal)
+			if (Signal)
+				break ;
 			throw std::runtime_error("Error On Poll !!");
-		if (Signal)
-			break ;
+		}
 
-		for (size_t i = 0; i < Fd.size(); i++)
-		{
-			if (Fd[i].revents & POLLIN)
-			{
-				if (Fd[i].fd == listenSockFd)
+		for (size_t i = 0; i < Fd.size(); ){
+
+			int currentFd = Fd[i].fd;
+
+			if (Fd[i].revents & (POLLERR | POLLHUP | POLLNVAL)){
+
+				if (currentFd != listenSockFd)
+					DisconnectClient(currentFd);
+				else
+					++i;
+				continue;
+			}
+
+			if (Fd[i].revents & POLLIN){
+
+				if (currentFd == listenSockFd)
 					AcceptClient();
 				else
-					ReceiveData(Fd[i].fd);
+					ReceiveData(currentFd);
 			}
-			if (Fd[i].revents & POLLOUT)
-				SendData(Fd[i].fd);
+
+			if (!Clients.count(currentFd) && currentFd != listenSockFd)
+				continue;
+
+			if (i < Fd.size() && (Fd[i].revents & POLLOUT))
+				SendData(currentFd);
+
+			if (!Clients.count(currentFd) && currentFd != listenSockFd)
+				continue;
+
+			++i;
 		}
 	}
-	stop();
 }
 
 void Server::stop( void ){
-	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it){
+	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it)
 		close(it->first);
-	}
 	Clients.clear();
 	Fd.clear();
 	if (listenSockFd >= 0){
@@ -101,10 +111,7 @@ void Server::SetupSocket( int Port ){
 
 	listenSockFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (listenSockFd <  0)
-	{
-		close (listenSockFd);
 		throw std::runtime_error("Error On Socket !!");
-	}
 
 	int op = 1;
 	if (setsockopt(listenSockFd, SOL_SOCKET, SO_REUSEADDR, &op, sizeof(op)) < 0){
@@ -127,7 +134,7 @@ void Server::SetupSocket( int Port ){
 		throw std::runtime_error("Error On Bind !!");
 	}
 
-	if (listen(listenSockFd, MAX_PENDING_CONNECTIONS) < 0){
+	if (listen(listenSockFd, SOMAXCONN) < 0){
 
 		close(listenSockFd);
 		throw std::runtime_error("Error On Listen !!");
@@ -174,10 +181,8 @@ void Server::ReceiveData( int fd )
 		DisconnectClient(fd);
 		return ;
 	}
-	if (bytes < 0)
-	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return ;
+	if (bytes < 0){
+
 		DisconnectClient(fd);
 		return ;
 	}
@@ -215,14 +220,10 @@ void Server::SendData( int fd ){
 	if (bytes > 0){
 		client->OutBuffer.erase(0, bytes);
 	} else if (bytes < 0) {
-		if (errno != EWOULDBLOCK && errno != EAGAIN) {
-			std::cerr << "[IRCSERV]: Send error on fd " << fd << std::endl;
-			DisconnectClient(fd);
-		}
+		DisconnectClient(fd);
 	}
 }
 
-//? Removes a client from the server, cleans them out of every channel they were in (and deletes empty channels), then closes their socket.
 void Server::DisconnectClient( int fd )
 {
 	std::cout << "[IRCSERV]: Client Disconnected fd " << fd << std::endl;
@@ -249,7 +250,6 @@ void Server::DisconnectClient( int fd )
 	close(fd);
 }
 
-//* The Execution
 void Server::HandleCommand( std::string cmd, int fd )
 {
 
@@ -301,5 +301,12 @@ void Server::HandleCommand( std::string cmd, int fd )
     else if (command == "KICK")
 		CmdKick(param, client);  //!done
     else if (command == "INVITE")
-		CmdInvite(param, client);//!done
+		CmdInvite(param, client);//todo
+	//! === this part below is for ‹mode-topic-privmsg› commands !//
+	else if (command == "TOPIC")
+		CmdTopic(param, client);
+	else if (command == "PRIVMSG")
+		CmdPrivmsg(param, client);
+	else if (command == "MODE")
+		CmdMode(param, client);
 }
