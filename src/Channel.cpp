@@ -147,3 +147,18 @@ void Channel::broadcastMessage(std::string msg, int senderFd) //* -1 = send to A
 			it->second->OutBuffer += msg;
 	}
 }
+
+// added fcts (obensarj) :
+std::string Channel::getTopic() const { return _topic; }
+void Channel::setTopic(std::string const newtopic) { _topic = newtopic; }
+
+bool Channel::isTopicRestricted() const { return _topicRestricted; }
+void Channel::setTopicRestricted(bool val) { _topicRestricted = val; }
+
+bool Channel::isInviteOnly() const { return _inviteOnly; }
+void Channel::setInviteOnly(bool val) { _inviteOnly = val; }
+
+void Channel::setKey(std::string key) { _key = key; }
+
+size_t Channel::getUserLimit() const { return _userLimit; }
+void Channel::setUserLimit(size_t limit) { _userLimit = limit; }

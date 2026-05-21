@@ -59,6 +59,10 @@ class Server
         void CmdKick( std::string param, Client *client );   //! done
         void CmdInvite( std::string param, Client *client ); //! done
 
+		void CmdMode( std::string param, Client *client);
+		void CmdTopic( std::string param, Client *client);
+		void CmdPrivmsg( std::string param, Client *client);
+
 		Client *getClientByFd( int fd );
 		Client *getClientByNickFromServer(std::string nickname);
 		void SendReply( int fd, std::string msg );

@@ -301,5 +301,12 @@ void Server::HandleCommand( std::string cmd, int fd )
     else if (command == "KICK")
 		CmdKick(param, client);  //!done
     else if (command == "INVITE")
-		CmdInvite(param, client);//!done
+		CmdInvite(param, client);//todo
+	//! === this part below is for ‹mode-topic-privmsg› commands !//
+	else if (command == "TOPIC")
+		CmdTopic(param, client);
+	else if (command == "PRIVMSG")
+		CmdPrivmsg(param, client);
+	else if (command == "MODE")
+		CmdMode(param, client);
 }
