@@ -8,7 +8,9 @@ int main(int argc, char const *argv[])
         return (EXIT_FAILURE);
     }
 
-    int Port = std::atoi(argv[1]);
+    std::istringstream ss(argv[1]);
+    int Port;
+    ss >> Port;
     std::string Password = argv[2];
 
     if (Port <= MAX_SYS_PORT || Port > MAX_PORT)

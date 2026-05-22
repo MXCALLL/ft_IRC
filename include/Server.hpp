@@ -27,6 +27,9 @@
 # define MAX_PORT 65535
 # define MAX_SYS_PORT 1023
 
+// Bot name used as the sender in messages
+# define BOT_NAME "BarahBot"
+
 //* Server class
 class Server
 {
@@ -67,6 +70,10 @@ class Server
 		Client *getClientByNickFromServer(std::string nickname);
 		void SendReply( int fd, std::string msg );
 		void WelcomeClient( int fd );
+
+		//* Bot *//
+		void BotWelcome(std::string channelName, Client *client);
+		void CmdBotAnnounce(std::string param, Client *client);
 		bool NicknameInUse( std::string nickname );
 		bool isPrintable( std::string Params);
 

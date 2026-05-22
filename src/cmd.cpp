@@ -187,6 +187,9 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 	// 366 Format: :<server> 366 <nickname> <channel> :End of /NAMES list
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
 
+	// Bot says welcome
+	BotWelcome(channelName, client);
+
 }
 
 //? JOIN command
