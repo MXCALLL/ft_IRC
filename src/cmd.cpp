@@ -365,7 +365,6 @@ void    Server::CmdTopic( std::string param, Client *client)
         newTopic = param.substr(colonPos + 1); // everthing after ':'
         changingTopic = true;
     }
-    // step 2 : validation
 
     // no channel name giver
     if (channelName.empty())
@@ -383,9 +382,8 @@ void    Server::CmdTopic( std::string param, Client *client)
         return ;
     }
 
-    Channel &channel = Channels.at(channelName); // refrence to the actual channel
+    Channel &channel = Channels.at(channelName);
 
-    // client not in channel
     if (!channel.isClientInChannel(client->Fd))
     {
         SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 442 "
@@ -393,27 +391,22 @@ void    Server::CmdTopic( std::string param, Client *client)
         return ;
     }
 
-    // step3: view topic or (NO topic provided)
     if (!changingTopic)
     {
         std::string topic = channel.getTopic();
         if (topic.empty())
         {
-            // no topic
             SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 331 "
                 + client->Nickname + " " + channelName + " :No topic is set\r\n");
         }
         else
         {
-            // here is the topicc
             SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 332 "
                 + client->Nickname + " " + channelName + " :" + topic + "\r\n");
         }
         return ;
     }
 
-    // step 4: change topic
-    // if mode +t is ON, only operator can change topic
     if (channel.isTopicRestricted() && !channel.isOperator(client->Fd))
     {
         SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 482 "
@@ -421,11 +414,8 @@ void    Server::CmdTopic( std::string param, Client *client)
         return ;
     }
 
-    // set new topicc
     channel.setTopic(newTopic);
 
-    // broadcast to evryojne includinhg the sender
-    // format: :nick!user@host TOPIC #channel :new topic
     std::string broadcast = ":" + client->Nickname + "!" + client->Username
         + "@" + client->IpAddr + " TOPIC " + channelName + " :" + newTopic + "\r\n";
 
@@ -436,11 +426,6 @@ void    Server::CmdTopic( std::string param, Client *client)
 
 void    Server::CmdPrivmsg( std::string param, Client *client)
 {
-    if (!client->Registered)
-    {
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not registered\r\n");
-        return ;
-    }
 
     std::string target;
     std::string message;
@@ -508,11 +493,6 @@ void    Server::CmdPrivmsg( std::string param, Client *client)
 
 void    Server::CmdMode( std::string param, Client *client)
 {
-    if (!client->Registered)
-    {
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not registered\r\n");
-        return ;
-    }
 
     std::istringstream ss(param);
     std::string channelName, modeStr;
@@ -561,7 +541,6 @@ void    Server::CmdMode( std::string param, Client *client)
         return ;
     }
 
-    // changing modes requires operator
     if (!channel.isOperator(client->Fd))
     {
         SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 482 "
@@ -681,22 +660,3 @@ void    Server::CmdMode( std::string param, Client *client)
         channel.broadcastMessage(broadcast, -1);
     }
 }
-
-/**
- * parse param → get channelName + newTopic
-
-if channelName empty → error 461
-if channel doesn't exist → error 403
-if client not in channel → error 442
-
-if newTopic not provided:
-    → just send back current topic (331 or 332)
-    → done
-
-if newTopic provided:
-    if channel.isTopicRestricted() && !channel.isOperator(client->Fd):
-        → error 482
-    else:
-        channel.setTopic(newTopic)
-        broadcast to channel: ":nick!user@host TOPIC #channel :newtopic\r\n"
- */
