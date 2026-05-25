@@ -168,7 +168,6 @@ void Server::AcceptClient( void ){
 			  << " on fd " << clientFd << std::endl;
 }
 
-//* The Buffer Manager
 void Server::ReceiveData( int fd )
 {
 	char buffer[BUFFER_SIZE];
