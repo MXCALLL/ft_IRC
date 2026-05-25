@@ -63,3 +63,59 @@ bool Server::isPrintable( std::string params)
 	}
 	return (true);
 }
+
+void Server::JoinOneChannel(std::string channelName, std::string key, Client *client)
+{
+	if (channelName.empty())
+		return ;
+	if (channelName.size() < 2 || (channelName[0] != '#' && channelName[0] != '&')) //! I add a check for JOIN # if the user enter a empty channel name! should I handle it?
+	{
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
+		return;
+	}
+
+	if (Channels.count(channelName) == 0)
+	{
+		Channels.insert(std::make_pair(channelName, Channel(channelName)));
+		Channels.at(channelName).addClient(client);
+		Channels.at(channelName).addOperator(client);
+		std::cout << "[IRCSERV]: Channel " << channelName << " created by " << client->Nickname << "!" << std::endl;
+	}
+	else
+	{
+		//? check passwords before joining (MODE +k)
+		if (!Channels.at(channelName).getKey().empty() && key != Channels.at(channelName).getKey())
+		{
+			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 475 " + client->Nickname + " " + channelName + " :Cannot join channel (+k)\r\n");
+			return ;
+		}
+		//? check limits before joining (MODE +l)
+		if (Channels.at(channelName).getChannelUserLimit() > 0 && Channels.at(channelName).getClientCount() >= Channels.at(channelName).getChannelUserLimit()) //?why not just use the seconde conditions (check if clients count is greater or equal to userlimit)
+		{
+			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 471 " + client->Nickname + " " + channelName + " :Cannot join channel (+l)\r\n");
+			return ;
+		}
+		//? check invite-only before joining
+		if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isInvited(client->Nickname))
+		{
+			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 473 " + client->Nickname + " " + channelName + " :Cannot join channel (+i)\r\n");
+			return;
+		}
+		Channels.at(channelName).addClient(client);
+		std::cout << "[IRCSERV]: " << client->Nickname << " joined existing channel " << channelName << "!" << std::endl;
+	}
+
+	std::string joinMsg = ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " JOIN :" + channelName + "\r\n";
+
+	SendReply(client->Fd, joinMsg);
+
+	Channels.at(channelName).broadcastMessage(joinMsg, client->Fd);
+
+	std::string clientList = Channels.at(channelName).getClientList();
+
+	// 353 Format: :<server> 353 <nickname> = <channel> :<names list>
+	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 353 " + client->Nickname + " = " + channelName + " :" + clientList + "\r\n");
+
+	// 366 Format: :<server> 366 <nickname> <channel> :End of /NAMES list
+	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
+}
