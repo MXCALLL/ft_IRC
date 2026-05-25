@@ -273,6 +273,7 @@ void Server::CmdInvite(std::string param, Client *client)
 	Channels.at(channelName).addToInviteList(targetNick);
 
 	//! NOTE: invite can bypass the limits (if an channle has a limit of users), check that later
+    //todo after a client has been desconected remove him from invite vector!
 }
 
 void Server::CmdTopic( std::string param, Client *client)
