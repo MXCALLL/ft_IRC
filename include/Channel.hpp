@@ -20,7 +20,7 @@ class Channel
 		// We want to reference the exact same Client object that the Server is managing.
 		std::map<int, Client*>      _clients;         //? Map of regular users (Key: fd, Value: Client pointer)
 		std::map<int, Client*>      _operators;       //? Map of channel operators (Key: fd, Value: Client pointer)
-		std::vector<std::string>	_inviteList;      //? vector of invite list of clients
+		std::vector<int>			_inviteList;      //? vector of invite list of clients
 
 	public:
 		//* Constructor & Destructor *//
@@ -34,14 +34,15 @@ class Channel
 		std::string getKey() const;
 		size_t getChannelUserLimit() const;
 		std::string getClientList();
-		bool isInvited(std::string nickname);
+		bool isInvited(int fd);
 		bool isEmpty() const;
 
 		//* Client Management *//
 		void addClient(Client* client);
 		void removeClient(int fd);
 		bool isClientInChannel(int fd);
-		void addToInviteList(std::string nickname);
+		void addToInviteList(int fd);
+		void removeFromInviteList(int fd);
 		Client *getClientByNickFromChannel(std::string nickname);
 
 		//* Operator Management *//
@@ -58,7 +59,7 @@ class Channel
 		void		setTopicRestricted(bool val);
 		void		setTopic(std::string const newtopic);
 
-		bool		isInviteOnly() const;
+		bool		isInviteOnly() const; //! redandent fun, it do the same as getInviteOnly()
 		void		setInviteOnly(bool val);
 		void		setKey(std::string key);
 		size_t		getUserLimit() const;

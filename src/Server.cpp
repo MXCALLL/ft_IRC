@@ -229,6 +229,7 @@ void Server::DisconnectClient( int fd )
 
 	for (std::map<std::string, Channel>::iterator it = Channels.begin(); it != Channels.end();)
 	{
+		it->second.removeFromInviteList(fd);
 		it->second.removeClient(fd);
 		if (it->second.isEmpty())
 			Channels.erase(it++);

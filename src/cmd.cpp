@@ -227,9 +227,6 @@ void Server::CmdKick( std::string param, Client *client )
 
 void Server::CmdInvite(std::string param, Client *client)
 {
-	//* param => Youssef #general
-	//* client => client that send the invitation (client object)
-
 	std::string	targetNick;
 	std::string	channelName;
 	std::istringstream ss(param);
@@ -270,10 +267,7 @@ void Server::CmdInvite(std::string param, Client *client)
 
 	SendReply(getClientByNickFromServer(targetNick)->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
 
-	Channels.at(channelName).addToInviteList(targetNick);
-
-	//! NOTE: invite can bypass the limits (if an channle has a limit of users), check that later
-    //todo after a client has been desconected remove him from invite vector!
+    Channels.at(channelName).addToInviteList(getClientByNickFromServer(targetNick)->Fd);
 }
 
 void Server::CmdTopic( std::string param, Client *client)

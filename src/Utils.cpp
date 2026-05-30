@@ -96,7 +96,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 			return ;
 		}
 		//? check invite-only before joining
-		if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isInvited(client->Nickname))
+		if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isInvited(client->Fd))
 		{
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 473 " + client->Nickname + " " + channelName + " :Cannot join channel (+i)\r\n");
 			return;

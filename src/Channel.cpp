@@ -41,7 +41,7 @@ std::string Channel::getClientList()
 	return list;
 }
 
-//? get clients number
+//? get clients number in current channel
 size_t Channel::getClientCount() const
 {
 	return _clients.size();
@@ -82,9 +82,22 @@ bool Channel::isClientInChannel(int fd)
 }
 
 //? add a client to invite list
-void Channel::addToInviteList(std::string nickname)
+void Channel::addToInviteList(int fd)
 {
-	_inviteList.push_back(nickname);
+	_inviteList.push_back(fd);
+}
+
+//? remove a client from invite list of the current channel
+void Channel::removeFromInviteList(int fd)
+{
+	for (size_t i = 0; i < _inviteList.size(); i++)
+	{
+		if (fd == _inviteList.at(i))
+		{
+			_inviteList.erase(_inviteList.begin() + i);
+			break ;
+		}
+	}
 }
 
 //? get a client from current channel by nickname
@@ -99,11 +112,11 @@ Client* Channel::getClientByNickFromChannel(std::string nickname)
 }
 
 //? Checks if a specific client is currently in the invited list
-bool Channel::isInvited(std::string nickname)
+bool Channel::isInvited(int fd)
 {
 	for (size_t i = 0; i < _inviteList.size(); ++i)
 	{
-		if (nickname == _inviteList.at(i))
+		if (fd == _inviteList.at(i))
 			return true;
 	}
 	return false;
