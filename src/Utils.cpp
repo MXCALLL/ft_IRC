@@ -68,7 +68,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 {
 	if (channelName.empty())
 		return ;
-	if (channelName.size() < 2 || (channelName[0] != '#' && channelName[0] != '&')) //! I add a check for JOIN # if the user enter a empty channel name! should I handle it?
+	if (channelName.size() < 2 || (channelName[0] != '#' && channelName[0] != '&')) //! I add a check for JOIN # if the user enter a empty channel name!
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
 		return;
@@ -95,13 +95,18 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 471 " + client->Nickname + " " + channelName + " :Cannot join channel (+l)\r\n");
 			return ;
 		}
-		//? check invite-only before joining
+		//? check invite-only before joining (MODE +i)
 		if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isInvited(client->Fd))
 		{
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 473 " + client->Nickname + " " + channelName + " :Cannot join channel (+i)\r\n");
 			return;
 		}
 		Channels.at(channelName).addClient(client);
+
+		//? remove client from invite list after he join
+		if (Channels.at(channelName).getInviteOnly() && Channels.at(channelName).isInvited(client->Fd))
+			Channels.at(channelName).removeFromInviteList(client->Fd);
+
 		std::cout << "[IRCSERV]: " << client->Nickname << " joined existing channel " << channelName << "!" << std::endl;
 	}
 
