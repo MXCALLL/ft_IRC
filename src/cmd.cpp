@@ -257,17 +257,25 @@ void Server::CmdInvite(std::string param, Client *client)
 		return;
 	}
 
-	if (!getClientByNickFromServer(targetNick))
+    Client *targetClient = getClientByNickFromServer(targetNick);
+
+	if (!targetClient)
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 401 " + client->Nickname + " " + targetNick + " :No such nick/channel\r\n");
 		return;
 	}
+    
+    if (Channels.at(channelName).isClientInChannel(targetClient->Fd))
+    {
+        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 443 " + client->Nickname + " " + targetNick + " " + channelName + " :is already on channel\r\n");
+        return ;
+    }
 
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 341 " + client->Nickname + " " + targetNick + " " + channelName + "\r\n");
 
-	SendReply(getClientByNickFromServer(targetNick)->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
+	SendReply(targetClient->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
 
-    Channels.at(channelName).addToInviteList(getClientByNickFromServer(targetNick)->Fd);
+    Channels.at(channelName).addToInviteList(targetClient->Fd);
 }
 
 void Server::CmdTopic( std::string param, Client *client)
