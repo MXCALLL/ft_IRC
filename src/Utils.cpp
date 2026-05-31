@@ -118,6 +118,13 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 
 	std::string clientList = Channels.at(channelName).getClientList();
 
+	std::string topic = Channels.at(channelName).getTopic();
+
+	if (topic.empty())
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 331 " + client->Nickname + " " + channelName + " :No topic is set\r\n");
+	else
+		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 332 " + client->Nickname + " " + channelName + " :" + topic + "\r\n");
+
 	// 353 Format: :<server> 353 <nickname> = <channel> :<names list>
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 353 " + client->Nickname + " = " + channelName + " :" + clientList + "\r\n");
 
