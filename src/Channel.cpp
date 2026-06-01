@@ -173,5 +173,5 @@ void Channel::setInviteOnly(bool val) { _inviteOnly = val; }
 
 void Channel::setKey(std::string key) { _key = key; }
 
-size_t Channel::getUserLimit() const { return _userLimit; }
+size_t Channel::getUserLimit() const { return _userLimit; } //! I have the same as this fun which is getChannelUserLimit() in line 57 in this file, it's redandent!
 void Channel::setUserLimit(size_t limit) { _userLimit = limit; }
