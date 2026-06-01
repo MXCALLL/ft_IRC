@@ -19,7 +19,7 @@ void Server::CmdPass( std::string param, Client *client )
 
 	if (param != Password)
 	{
-		client->PassAccepted = false; //? I add this line here to fix the bug of the last password sent is used for verification, but still not confermed by (muidbell)
+		client->PassAccepted = false;
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 464 * :Password incorrect\r\n");
 		return ;
 	}

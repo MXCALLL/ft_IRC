@@ -68,7 +68,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 {
 	if (channelName.empty())
 		return ;
-	if (channelName.size() < 2 || (channelName[0] != '#' && channelName[0] != '&')) //! I add a check for JOIN # if the user enter a empty channel name!
+	if (channelName.size() < 2 || (channelName[0] != '#' && channelName[0] != '&'))
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
 		return;
@@ -92,7 +92,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 			return ;
 		}
 		//? check limits before joining (MODE +l)
-		if (Channels.at(channelName).getChannelUserLimit() > 0 && Channels.at(channelName).getClientCount() >= Channels.at(channelName).getChannelUserLimit()) //? why not just use the seconde conditions (check if clients count is greater or equal to userlimit)
+		if (Channels.at(channelName).getChannelUserLimit() > 0 && Channels.at(channelName).getClientCount() >= Channels.at(channelName).getChannelUserLimit())
 		{
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 471 " + client->Nickname + " " + channelName + " :Cannot join channel (+l)\r\n");
 			return ;
