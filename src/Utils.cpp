@@ -83,6 +83,8 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 	}
 	else
 	{
+		if (Channels.at(channelName).isClientInChannel(client->Fd))
+			return ;
 		//? check passwords before joining (MODE +k)
 		if (!Channels.at(channelName).getKey().empty() && key != Channels.at(channelName).getKey())
 		{
@@ -90,7 +92,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 			return ;
 		}
 		//? check limits before joining (MODE +l)
-		if (Channels.at(channelName).getChannelUserLimit() > 0 && Channels.at(channelName).getClientCount() >= Channels.at(channelName).getChannelUserLimit()) //?why not just use the seconde conditions (check if clients count is greater or equal to userlimit)
+		if (Channels.at(channelName).getChannelUserLimit() > 0 && Channels.at(channelName).getClientCount() >= Channels.at(channelName).getChannelUserLimit()) //? why not just use the seconde conditions (check if clients count is greater or equal to userlimit)
 		{
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 471 " + client->Nickname + " " + channelName + " :Cannot join channel (+l)\r\n");
 			return ;
@@ -116,18 +118,14 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 
 	Channels.at(channelName).broadcastMessage(joinMsg, client->Fd);
 
-	std::string clientList = Channels.at(channelName).getClientList();
-
 	std::string topic = Channels.at(channelName).getTopic();
-
+	
 	if (topic.empty())
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 331 " + client->Nickname + " " + channelName + " :No topic is set\r\n");
 	else
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 332 " + client->Nickname + " " + channelName + " :" + topic + "\r\n");
 
-	// 353 Format: :<server> 353 <nickname> = <channel> :<names list>
-	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 353 " + client->Nickname + " = " + channelName + " :" + clientList + "\r\n");
+	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 353 " + client->Nickname + " = " + channelName + " :" + Channels.at(channelName).getClientList() + "\r\n");
 
-	// 366 Format: :<server> 366 <nickname> <channel> :End of /NAMES list
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
 }
