@@ -58,7 +58,7 @@ bool Server::isPrintable( std::string params)
 {
 	for (size_t i = 0; i < params.size(); i++)
 	{
-		if (!std::isprint(static_cast<unsigned char>(params[i])) && params[i] != '\r' && params[i] != '\n')
+		if (!std::isprint(static_cast<unsigned char>(params[i])) && params[i] != '\r' && params[i] != '\n' && params[i] != '\x01') //! I add this check for '\x01' (the CTCP character) to handl file transfer ( must confirmed by muidbell)
 			return (false);
 	}
 	return (true);
