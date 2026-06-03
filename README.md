@@ -10,9 +10,9 @@ The server handles multiple simultaneous client connections using a single non-b
 
 The project is divided across three areas of responsibility:
 
-- **muidbell** : server architecture, socket setup, non-blocking I/O, client registration (PASS, NICK, USER)
-- **hbenmoha** : channel commands: JOIN, INVITE, KICK, PRIVMSG
-- **obensarj** : operator commands: MODE, TOPIC
+- **muidbell** : server architecture, socket setup, non-blocking I/O, client registration (PASS, NICK, USER), bot (bonus)
+- **hbenmoha** : channel commands: JOIN, INVITE, KICK, file transfer (bonus)
+- **obensarj** : operator commands: MODE, TOPIC, PRIVMSG
 
 ## Features
 
