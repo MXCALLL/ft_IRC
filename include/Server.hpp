@@ -5,7 +5,6 @@
 # include <string>
 # include <cstring>
 # include <cstdlib>
-# include <cerrno>
 # include <vector>
 # include <map>
 # include <sstream>

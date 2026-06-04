@@ -329,4 +329,6 @@ void Server::HandleCommand( std::string cmd, int fd )
 		else
 			SendReply(fd, ":" + std::string(SERVER_NAME) + " 421 " + client->Nickname + " BOT :Unknown BOT subcommand. Usage: BOT ANNOUNCE :<message>\r\n");
 	}
+	else
+		SendReply(fd, ":" + std::string(SERVER_NAME) + " 421 * " + command + " :Unknown t command\r\n");
 }

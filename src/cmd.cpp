@@ -101,26 +101,36 @@ void Server::CmdUser( std::string param, Client *client )
 		return ;
 	}
 
-	std::istringstream ss(param);
-	std::string username, mode, unused, realname;
+    std::vector<std::string> params;
+    std::istringstream ss(param);
+    std::string word;
 
-	ss >> username >> mode >> unused;
+    while (ss >> word){
 
-	size_t colon = param.find(':');
-	if (colon != std::string::npos)
-		realname = param.substr(colon + 1);
-	else
-		realname = username;
+        if (word[0] == ':'){
+            std::string LiteralStr;
+            std::getline(ss, LiteralStr);
+            params.push_back(word.substr(1) + LiteralStr);
+            break;
+        }
+        else
+            params.push_back(word);
+    }
 
-	if (username.empty())
-	{
-		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * USER :Not enough parameters\r\n");
+    if (params.size() < 4){
+
+        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * USER :Not enough parameters\r\n");
 		return ;
-	}
+    }
+    if (params.size() > 4){
 
-	client->Username = username;
-	client->Realname = realname;
-	std::cout << "[IRCSERV]: fd " << client->Fd << " Username set to " << username << std::endl;
+        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * USER :Too many parameters\r\n");
+		return ;
+    }
+
+	client->Username = params.at(0);
+	client->Realname = params.at(3);
+	std::cout << "[IRCSERV]: fd " << client->Fd << " Username set to " << client->Username << std::endl;
 
 	if (!client->Registered && !client->Nickname.empty() && !client->Username.empty())
 	{
