@@ -19,7 +19,7 @@ void Server::CmdPass( std::string param, Client *client )
 
 	if (param != Password)
 	{
-		client->PassAccepted = false; //? I add this line here to fix the bug of the last password sent is used for verification, but still not confermed by (muidbell)
+		client->PassAccepted = false;
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 464 * :Password incorrect\r\n");
 		return ;
 	}
@@ -101,26 +101,36 @@ void Server::CmdUser( std::string param, Client *client )
 		return ;
 	}
 
-	std::istringstream ss(param);
-	std::string username, mode, unused, realname;
+    std::vector<std::string> params;
+    std::istringstream ss(param);
+    std::string word;
 
-	ss >> username >> mode >> unused;
+    while (ss >> word){
 
-	size_t colon = param.find(':');
-	if (colon != std::string::npos)
-		realname = param.substr(colon + 1);
-	else
-		realname = username;
+        if (word[0] == ':'){
+            std::string LiteralStr;
+            std::getline(ss, LiteralStr);
+            params.push_back(word.substr(1) + LiteralStr);
+            break;
+        }
+        else
+            params.push_back(word);
+    }
 
-	if (username.empty())
-	{
-		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * USER :Not enough parameters\r\n");
+    if (params.size() < 4){
+
+        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * USER :Not enough parameters\r\n");
 		return ;
-	}
+    }
+    if (params.size() > 4){
 
-	client->Username = username;
-	client->Realname = realname;
-	std::cout << "[IRCSERV]: fd " << client->Fd << " Username set to " << username << std::endl;
+        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 * USER :Too many parameters\r\n");
+		return ;
+    }
+
+	client->Username = params.at(0);
+	client->Realname = params.at(3);
+	std::cout << "[IRCSERV]: fd " << client->Fd << " Username set to " << client->Username << std::endl;
 
 	if (!client->Registered && !client->Nickname.empty() && !client->Username.empty())
 	{
@@ -128,64 +138,6 @@ void Server::CmdUser( std::string param, Client *client )
 		WelcomeClient(client->Fd);
 		std::cout << "[IRCSERV]: fd " << client->Fd << " Registration Complete !!" << std::endl;
 	}
-}
-
-void Server::JoinOneChannel(std::string channelName, std::string key, Client *client)
-{
-	(void)key;
-	if (channelName.empty())
-		return ;
-	if (channelName[0] != '#' && channelName[0] != '&') //todo mr.aouanni said that we should remove the check for '&'
-	{
-		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 " + client->Nickname + " " + channelName + " :No such channel\r\n");
-		return;
-	}
-
-	if (Channels.count(channelName) == 0)
-	{
-		Channels.insert(std::make_pair(channelName, Channel(channelName)));
-		Channels.at(channelName).addClient(client);
-		Channels.at(channelName).addOperator(client);
-		std::cout << "[IRCSERV]: Channel " << channelName << " created by " << client->Nickname << "!" << std::endl;
-	}
-	else
-	{
-		//? check passwords before joining (MODE +k)
-		if (!Channels.at(channelName).getKey().empty() && key != Channels.at(channelName).getKey())
-		{
-			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 475 " + client->Nickname + " " + channelName + " :Cannot join channel (+k)\r\n");
-			return ;
-		}
-		//? check limits before joining (MODE +l)
-		if (Channels.at(channelName).getChannelUserLimit() > 0 && Channels.at(channelName).getClientCount() >= Channels.at(channelName).getChannelUserLimit()) //?why not just use the seconde conditions (check if clients count is greater or equal to userlimit)
-		{
-			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 471 " + client->Nickname + " " + channelName + " :Cannot join channel (+l)\r\n");
-			return ;
-		}
-		//? check invite-only before joining
-		if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isInvited(client->Nickname))
-		{
-			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 473 " + client->Nickname + " " + channelName + " :Cannot join channel (+i)\r\n");
-			return;
-		}
-		Channels.at(channelName).addClient(client);
-		std::cout << "[IRCSERV]: " << client->Nickname << " joined existing channel " << channelName << "!" << std::endl;
-	}
-
-	std::string joinMsg = ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " JOIN :" + channelName + "\r\n";
-
-	SendReply(client->Fd, joinMsg);
-
-	Channels.at(channelName).broadcastMessage(joinMsg, client->Fd);
-
-	std::string clientList = Channels.at(channelName).getClientList();
-
-	// 353 Format: :<server> 353 <nickname> = <channel> :<names list>
-	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 353 " + client->Nickname + " = " + channelName + " :" + clientList + "\r\n");
-
-	// 366 Format: :<server> 366 <nickname> <channel> :End of /NAMES list
-	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
-
 }
 
 void Server::CmdJoin(std::string param, Client *client)
@@ -286,9 +238,6 @@ void Server::CmdKick( std::string param, Client *client )
 
 void Server::CmdInvite(std::string param, Client *client)
 {
-	//* param => Youssef #general
-	//* client => client that send the invitation (client object)
-
 	std::string	targetNick;
 	std::string	channelName;
 	std::istringstream ss(param);
@@ -319,19 +268,25 @@ void Server::CmdInvite(std::string param, Client *client)
 		return;
 	}
 
-	if (!getClientByNickFromServer(targetNick))
+    Client *targetClient = getClientByNickFromServer(targetNick);
+
+	if (!targetClient)
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 401 " + client->Nickname + " " + targetNick + " :No such nick/channel\r\n");
 		return;
 	}
+    
+    if (Channels.at(channelName).isClientInChannel(targetClient->Fd))
+    {
+        SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 443 " + client->Nickname + " " + targetNick + " " + channelName + " :is already on channel\r\n");
+        return ;
+    }
 
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 341 " + client->Nickname + " " + targetNick + " " + channelName + "\r\n");
 
-	SendReply(getClientByNickFromServer(targetNick)->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
+	SendReply(targetClient->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
 
-	Channels.at(channelName).addToInviteList(targetNick);
-
-	//! NOTE: invite can bypass the limits (if an channle has a limit of users), check that later
+    Channels.at(channelName).addToInviteList(targetClient->Fd);
 }
 
 
@@ -407,7 +362,7 @@ void    Server::CmdTopic( std::string param, Client *client)
     std::cout << "[IRCSERV]: TOPIC command received from fd " << client->Fd << " with param: " << param << std::endl;
 }
 
-void    Server::CmdPrivmsg( std::string param, Client *client)
+void Server::CmdPrivmsg( std::string param, Client *client)
 {
 
     std::string target;
@@ -473,8 +428,7 @@ void    Server::CmdPrivmsg( std::string param, Client *client)
     }
 }
 
-
-void    Server::CmdMode( std::string param, Client *client)
+void Server::CmdMode( std::string param, Client *client)
 {
 
     std::istringstream ss(param);
