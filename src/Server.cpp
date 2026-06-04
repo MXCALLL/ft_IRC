@@ -168,7 +168,6 @@ void Server::AcceptClient( void ){
 			  << " on fd " << clientFd << std::endl;
 }
 
-//* The Buffer Manager
 void Server::ReceiveData( int fd )
 {
 	char buffer[BUFFER_SIZE];
@@ -230,6 +229,7 @@ void Server::DisconnectClient( int fd )
 
 	for (std::map<std::string, Channel>::iterator it = Channels.begin(); it != Channels.end();)
 	{
+		it->second.removeFromInviteList(fd);
 		it->second.removeClient(fd);
 		if (it->second.isEmpty())
 			Channels.erase(it++);
@@ -295,14 +295,12 @@ void Server::HandleCommand( std::string cmd, int fd )
 		CmdUser(param, client);
 	else if (!client->Registered)
 		SendReply(fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not registered\r\n");
-	//! === this part below is for (join/kick/invite) commands !//
 	else if (command == "JOIN")
-		CmdJoin(param, client);  //!done
+		CmdJoin(param, client);
     else if (command == "KICK")
-		CmdKick(param, client);  //!done
+		CmdKick(param, client);
     else if (command == "INVITE")
-		CmdInvite(param, client);//todo
-	//! === this part below is for ‹mode-topic-privmsg› commands !//
+		CmdInvite(param, client);
 	else if (command == "TOPIC")
 		CmdTopic(param, client);
 	else if (command == "PRIVMSG")
