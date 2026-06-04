@@ -130,7 +130,6 @@ void Server::CmdUser( std::string param, Client *client )
 	}
 }
 
-//? Helper fun of JOIN Cmd
 void Server::JoinOneChannel(std::string channelName, std::string key, Client *client)
 {
 	(void)key;
@@ -189,7 +188,6 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 
 }
 
-//? JOIN command
 void Server::CmdJoin(std::string param, Client *client)
 {
 	if (param.empty())
@@ -222,7 +220,6 @@ void Server::CmdJoin(std::string param, Client *client)
 	}
 }
 
-//? KICK Command
 void Server::CmdKick( std::string param, Client *client )
 {
 	std::istringstream	ss(param);
@@ -286,7 +283,7 @@ void Server::CmdKick( std::string param, Client *client )
 	std::cout << "[IRCSERV]: " << client->Nickname << " kicked " << targetNick << " from " << channelName << " (" << reason << ")" << std::endl;
 }
 
-//? INVITE Command
+
 void Server::CmdInvite(std::string param, Client *client)
 {
 	//* param => Youssef #general
@@ -337,36 +334,23 @@ void Server::CmdInvite(std::string param, Client *client)
 	//! NOTE: invite can bypass the limits (if an channle has a limit of users), check that later
 }
 
-// ‹commands/mode-topic-privmsg›
 
 void    Server::CmdTopic( std::string param, Client *client)
 {
-    if (!client->Registered)
-    {
-        SendReply(client->Fd, ":" + std::string(SERVER_NAME)
-            + " 451 * :You have not registered\r\n");
-        return ;
-    }
-    // step 1 : parse chanel name and opt new topic
-    // params comes in 2 forms :
-    // "#general"                   -> just viewing
-    // "#general    :new topic"     ->changing topic
-
     std::string channelName;
     std::string newTopic;
     bool        changingTopic = false;
 
     std::istringstream ss(param);
-    ss >> channelName; //first name = channel name
+    ss >> channelName;
 
     size_t colonPos = param.find(':');
     if (colonPos != std::string::npos)
     {
-        newTopic = param.substr(colonPos + 1); // everthing after ':'
+        newTopic = param.substr(colonPos + 1);
         changingTopic = true;
     }
 
-    // no channel name giver
     if (channelName.empty())
     {
         SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 "
@@ -374,7 +358,6 @@ void    Server::CmdTopic( std::string param, Client *client)
         return ;
     }
 
-    // channel doest exist
     if (Channels.find(channelName) == Channels.end())
     {
         SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 403 "
