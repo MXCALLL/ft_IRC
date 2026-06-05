@@ -47,11 +47,8 @@ void Server::WelcomeClient( int fd )
 	std::string nick = client->Nickname;
 	std::string prefix = ":" + std::string(SERVER_NAME) + " ";
 
-	SendReply(fd, prefix + "001 " + nick + " :Welcome to the IRC Network, " +
-		nick + "!" + client->Username + "@" + client->IpAddr + "\r\n");
-	SendReply(fd, prefix + "002 " + nick + " :Your host is " + SERVER_NAME + ", running version 1.0\r\n");
-	SendReply(fd, prefix + "003 " + nick + " :This server was created today\r\n");
-	SendReply(fd, prefix + "004 " + nick + " " + SERVER_NAME + " 1.0 o o\r\n");
+
+	SendReply(fd, prefix + "001 " + nick + " :Welcome to the IRC Server\r\n");
 }
 
 bool Server::isPrintable( std::string params)

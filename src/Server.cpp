@@ -259,6 +259,12 @@ void Server::HandleCommand( std::string cmd, int fd )
 	if (cmd.empty())
 		return;
 
+	if (cmd.size() > 510){
+
+		SendReply(fd, ":" + std::string(SERVER_NAME) + " 417 * :Input line was too long\r\n");
+		return;
+	}
+
 	std::stringstream ss(cmd);
 	std::string prefix, command, param;
 
@@ -307,26 +313,6 @@ void Server::HandleCommand( std::string cmd, int fd )
 		CmdPrivmsg(param, client);
 	else if (command == "MODE")
 		CmdMode(param, client);
-	else if (command == "BOT")
-	{
-		// Parse: BOT ANNOUNCE :<message>
-		std::string subCmd;
-		std::istringstream botSs(param);
-		botSs >> subCmd;
-		for (size_t j = 0; j < subCmd.size(); j++)
-			subCmd[j] = std::toupper(subCmd[j]);
-
-		// Everything after ':' is the message
-		std::string botMsg;
-		size_t colonPos = param.find(':');
-		if (colonPos != std::string::npos)
-			botMsg = param.substr(colonPos + 1);
-
-		if (subCmd == "ANNOUNCE")
-			CmdBotAnnounce(botMsg, client);
-		else
-			SendReply(fd, ":" + std::string(SERVER_NAME) + " 421 " + client->Nickname + " BOT :Unknown BOT subcommand. Usage: BOT ANNOUNCE :<message>\r\n");
-	}
 	else
-		SendReply(fd, ":" + std::string(SERVER_NAME) + " 421 * " + command + " :Unknown t command\r\n");
+		SendReply(fd, ":" + std::string(SERVER_NAME) + " 421 * " + command + ": Unknown command\r\n");
 }

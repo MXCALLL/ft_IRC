@@ -39,7 +39,7 @@ int main(int argc, char const *argv[])
     }
     catch(const std::exception& e)
     {
-        std::cerr << "[IRCSERV]: " << e.what() << '\n';
+        std::cerr << "[IRCSERV]: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 

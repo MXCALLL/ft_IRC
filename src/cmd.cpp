@@ -389,6 +389,15 @@ void Server::CmdPrivmsg( std::string param, Client *client)
         return ;
     }
 
+    std::string subCmd(target);
+    for (size_t i = 0; i < target.size(); ++i)
+        subCmd[i] = std::toupper(subCmd[i]);
+
+    if (subCmd == "ANNOUNCE"){
+        CmdBotAnnounce(message, client);
+        return ;
+    }
+
     std::string prefix = ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr;
 
     // target is a channel
