@@ -398,7 +398,6 @@ void Server::CmdPrivmsg( std::string param, Client *client)
 
     std::string prefix = ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr;
 
-    // target is a channel
     if (target[0] == '#' || target[0] == '&')
     {
         if (Channels.find(target) == Channels.end())
@@ -421,7 +420,6 @@ void Server::CmdPrivmsg( std::string param, Client *client)
     }
     else
     {
-        // target is a nickname
         Client *targetClient = getClientByNickFromServer(target);
 
         if (!targetClient)
@@ -465,7 +463,6 @@ void Server::CmdMode( std::string param, Client *client)
         return ;
     }
 
-    // view current modes: MODE #channel
     if (modeStr.empty())
     {
         std::string modes = "+";
@@ -492,7 +489,6 @@ void Server::CmdMode( std::string param, Client *client)
         return ;
     }
 
-    // collect params after the modestring
     std::vector<std::string> args;
     std::string token;
     while (ss >> token)

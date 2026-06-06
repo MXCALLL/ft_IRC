@@ -1,6 +1,4 @@
-
 #include "../include/Client.hpp"
-
 
 Client::Client() : Fd(-1), IpAddr(""), Nickname(""), Username(""), Realname(""),
     Buffer(""), OutBuffer(""), PassAccepted(false), Registered(false)
