@@ -285,7 +285,8 @@ void Server::CmdInvite(std::string param, Client *client)
 
 	SendReply(targetClient->Fd, ":" + client->Nickname + "!" + client->Username + "@" + client->IpAddr + " INVITE " + targetNick + " :" + channelName + "\r\n");
 
-    Channels.at(channelName).addToInviteList(targetClient->Fd);
+	if (!Channels.at(channelName).isInvited(targetClient->Fd))
+    	Channels.at(channelName).addToInviteList(targetClient->Fd);
 }
 
 void    Server::CmdTopic( std::string param, Client *client)
