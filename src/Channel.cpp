@@ -9,7 +9,7 @@ Channel::Channel(std::string name) : _name(name), _topic(""), _key(""), _inviteO
 //? Destructor
 Channel::~Channel() {}
 
-//! --- Getters ---
+//! --- Getters & Setters ---
 
 //? Gets the channel's name
 std::string Channel::getName() const
@@ -18,7 +18,7 @@ std::string Channel::getName() const
 }
 
 //? check if this channel is invite only
-bool Channel::getInviteOnly() const
+bool Channel::isInviteOnly() const
 {
 	return _inviteOnly;
 }
@@ -57,6 +57,48 @@ std::string Channel::getKey() const
 size_t Channel::getChannelUserLimit() const
 {
 	return _userLimit;
+}
+
+//? get channel's Topic
+std::string Channel::getTopic() const
+{
+	return _topic;
+}
+
+//? set channel's Topic
+void Channel::setTopic(std::string const newtopic)
+{
+	_topic = newtopic;
+}
+
+//? check if channel's Topic Restricted
+bool Channel::isTopicRestricted() const
+{
+	return _topicRestricted;
+}
+
+//? set channel's TopicRestricted bool
+void Channel::setTopicRestricted(bool val)
+{
+	_topicRestricted = val;
+}
+
+//? set channel's InviteOnly bool
+void Channel::setInviteOnly(bool val)
+{
+	_inviteOnly = val;
+}
+
+//? set channel's key bool
+void Channel::setKey(std::string key)
+{
+	_key = key;
+}
+
+//? set channel's userLimit
+void Channel::setUserLimit(size_t limit)
+{
+	_userLimit = limit;
 }
 
 //! --- Client Management ---
@@ -160,18 +202,3 @@ void Channel::broadcastMessage(std::string msg, int senderFd) //* -1 = send to A
 			it->second->OutBuffer += msg;
 	}
 }
-
-// added fcts (obensarj) :
-std::string Channel::getTopic() const { return _topic; }
-void Channel::setTopic(std::string const newtopic) { _topic = newtopic; }
-
-bool Channel::isTopicRestricted() const { return _topicRestricted; }
-void Channel::setTopicRestricted(bool val) { _topicRestricted = val; }
-
-bool Channel::isInviteOnly() const { return _inviteOnly; }
-void Channel::setInviteOnly(bool val) { _inviteOnly = val; }
-
-void Channel::setKey(std::string key) { _key = key; }
-
-size_t Channel::getUserLimit() const { return _userLimit; } //! I have the same as this fun which is getChannelUserLimit() in line 57 in this file, it's redandent!
-void Channel::setUserLimit(size_t limit) { _userLimit = limit; }

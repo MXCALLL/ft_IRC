@@ -9,18 +9,15 @@
 class Channel
 {
 	private:
-		std::string                 _name;
-		std::string                 _topic;
-		std::string                 _key;             //? Password for the channel (mode k)
-		bool                        _inviteOnly;      //? Invite-only mode (mode i)
-		bool                        _topicRestricted; //? Restrict topic changes to ops (mode t)
-		size_t                      _userLimit;       //? Max users allowed (mode l)
-
-		// We use pointers (Client*) so we don't accidentally copy the user's data!
-		// We want to reference the exact same Client object that the Server is managing.
-		std::map<int, Client*>      _clients;         //? Map of regular users (Key: fd, Value: Client pointer)
-		std::map<int, Client*>      _operators;       //? Map of channel operators (Key: fd, Value: Client pointer)
-		std::vector<int>			_inviteList;      //? vector of invite list of clients
+		std::string					_name;
+		std::string					_topic;
+		std::string					_key;
+		bool						_inviteOnly;
+		bool						_topicRestricted;
+		size_t						_userLimit;
+		std::map<int, Client*>		_clients;
+		std::map<int, Client*>		_operators;
+		std::vector<int>			_inviteList;
 
 	public:
 		//* Constructor & Destructor *//
@@ -28,14 +25,21 @@ class Channel
 		~Channel();
 
 		//*  Getters *//
-		std::string getName() const;
-		bool getInviteOnly() const;
-		size_t getClientCount() const;
-		std::string getKey() const;
-		size_t getChannelUserLimit() const;
-		std::string getClientList();
-		bool isInvited(int fd);
-		bool isEmpty() const;
+		std::string	getName() const;
+		bool		isInviteOnly() const;
+		size_t		getClientCount() const;
+		std::string	getKey() const;
+		size_t		getChannelUserLimit() const;
+		std::string	getClientList();
+		bool		isInvited(int fd);
+		bool		isEmpty() const;
+		std::string	getTopic() const;
+		void		setTopic(std::string const newtopic);
+		void		setInviteOnly(bool val);
+		void		setKey(std::string key);
+		void		setUserLimit(size_t limit);
+		bool		isTopicRestricted() const;
+		void		setTopicRestricted(bool val);
 
 		//* Client Management *//
 		void addClient(Client* client);
@@ -53,17 +57,6 @@ class Channel
 		//* Core Action *//
 		void broadcastMessage(std::string msg, int senderFd);
 
-		// added by obensarj
-		std::string getTopic() const;
-		bool		isTopicRestricted() const;
-		void		setTopicRestricted(bool val);
-		void		setTopic(std::string const newtopic);
-
-		bool		isInviteOnly() const; //! redandent fun, it do the same as getInviteOnly()
-		void		setInviteOnly(bool val);
-		void		setKey(std::string key);
-		size_t		getUserLimit() const;
-		void		setUserLimit(size_t limit);
 };
 
 #endif

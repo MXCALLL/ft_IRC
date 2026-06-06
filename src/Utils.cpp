@@ -55,7 +55,7 @@ bool Server::isPrintable( std::string params)
 {
 	for (size_t i = 0; i < params.size(); i++)
 	{
-		if (!std::isprint(static_cast<unsigned char>(params[i])) && params[i] != '\r' && params[i] != '\n' && params[i] != '\x01') //! I add this check for '\x01' (the CTCP character) to handl file transfer ( must confirmed by muidbell)
+		if (!std::isprint(static_cast<unsigned char>(params[i])) && params[i] != '\r' && params[i] != '\n' && params[i] != '\x01')
 			return (false);
 	}
 	return (true);
@@ -95,7 +95,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 			return ;
 		}
 		//? check invite-only before joining (MODE +i)
-		if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isInvited(client->Fd))
+		if (Channels.at(channelName).isInviteOnly() && !Channels.at(channelName).isInvited(client->Fd))
 		{
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 473 " + client->Nickname + " " + channelName + " :Cannot join channel (+i)\r\n");
 			return;
@@ -103,7 +103,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 		Channels.at(channelName).addClient(client);
 
 		//? remove client from invite list after he join
-		if (Channels.at(channelName).getInviteOnly() && Channels.at(channelName).isInvited(client->Fd))
+		if (Channels.at(channelName).isInviteOnly() && Channels.at(channelName).isInvited(client->Fd))
 			Channels.at(channelName).removeFromInviteList(client->Fd);
 
 		std::cout << "[IRCSERV]: " << client->Nickname << " joined existing channel " << channelName << "!" << std::endl;

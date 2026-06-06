@@ -235,7 +235,6 @@ void Server::CmdKick( std::string param, Client *client )
 	std::cout << "[IRCSERV]: " << client->Nickname << " kicked " << targetNick << " from " << channelName << " (" << reason << ")" << std::endl;
 }
 
-
 void Server::CmdInvite(std::string param, Client *client)
 {
 	std::string	targetNick;
@@ -262,7 +261,7 @@ void Server::CmdInvite(std::string param, Client *client)
 		return;
 	}
 
-	if (Channels.at(channelName).getInviteOnly() && !Channels.at(channelName).isOperator(client->Fd))
+	if (Channels.at(channelName).isInviteOnly() && !Channels.at(channelName).isOperator(client->Fd))
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 482 " + client->Nickname + " " + channelName + " :You're not channel operator\r\n");
 		return;
@@ -288,7 +287,6 @@ void Server::CmdInvite(std::string param, Client *client)
 
     Channels.at(channelName).addToInviteList(targetClient->Fd);
 }
-
 
 void    Server::CmdTopic( std::string param, Client *client)
 {
@@ -475,10 +473,10 @@ void Server::CmdMode( std::string param, Client *client)
         if (channel.isInviteOnly()) modes += "i";
         if (channel.isTopicRestricted()) modes += "t";
         if (!channel.getKey().empty()) { modes += "k"; modeParams += " " + channel.getKey(); }
-        if (channel.getUserLimit() > 0)
+        if (channel.getChannelUserLimit() > 0)
         {
             std::ostringstream oss;
-            oss << channel.getUserLimit();
+            oss << channel.getChannelUserLimit();
             modes += "l";
             modeParams += " " + oss.str();
         }
