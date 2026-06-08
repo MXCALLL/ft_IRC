@@ -261,7 +261,7 @@ void Server::CmdInvite(std::string param, Client *client)
 		return;
 	}
 
-	if (Channels.at(channelName).isInviteOnly() && !Channels.at(channelName).isOperator(client->Fd))
+	if (!Channels.at(channelName).isOperator(client->Fd))
 	{
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 482 " + client->Nickname + " " + channelName + " :You're not channel operator\r\n");
 		return;
