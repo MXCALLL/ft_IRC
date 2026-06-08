@@ -60,18 +60,47 @@ Example:
 
 ### Connecting with an IRC Client
 
-The reference client used for this project is **irssi**. To connect:
+The reference client used for this project is **irssi**.
+
+#### What is irssi?
+
+irssi is a modular, terminal-based Internet Relay Chat client. It is highly extensible and widely used for IRC communication.
 
 ```bash
+# Install irssi (if not already installed)
+brew install irssi        # macOS
+sudo apt install irssi    # Ubuntu/Debian
+```
+
+#### Basic Usage
+
+```bash
+irssi [--config=PATH] [--home=PATH] [-c server] [-p port] [-n nickname] [-w password]
+
+# For full options:
+man irssi
+```
+
+#### Connecting to the Server
+
+**Option 1 — Launch with nickname:**
+```bash
+irssi -n yournickname
+```
+
+**Option 2 — Launch without nickname:**
+```bash
 irssi
+# irssi will use the nickname defined in ~/.irssi/config
 ```
 
-Then inside irssi:
-
-```
+Then inside irssi, connect to the server:
+```bash
 /connect 127.0.0.1 6667 mypassword
-/nick yournickname
-/join #general
+
+Or with a nickname directly :
+
+/connect 127.0.0.1 6667 mypassword yournickname
 ```
 
 ### Testing with netcat
@@ -105,6 +134,6 @@ JOIN #general
 
 All three team members used **Claude (Anthropic)** as an AI assistant throughout the project.
 
-Claude was used interactively as a learning and debugging tool — explaining socket programming and networking concepts, clarifying RFC 1459 protocol requirements and message formats, reviewing code logic, identifying bugs, and guiding the implementation of each command step by step. It was also used to understand C++ data structures (maps, iterators, references) in the context of the project, and to design and run edge case tests using `nc` and custom Python scripts.
+Claude was used interactively as a learning and debugging tool — explaining socket programming and networking concepts, clarifying RFC 1459 protocol requirements and message formats, and guiding the implementation of each command. It was also used to understand C++ data structures (maps, iterators, references) in the context of the project, and to design and run edge case tests using `nc` and custom Python scripts.
 
 In all cases, Claude guided the team toward solutions rather than generating complete code directly, the understanding and implementation decisions remained with the developers.
