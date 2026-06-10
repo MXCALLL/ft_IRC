@@ -116,7 +116,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 	Channels.at(channelName).broadcastMessage(joinMsg, client->Fd);
 
 	std::string topic = Channels.at(channelName).getTopic();
-	
+
 	if (topic.empty())
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 331 " + client->Nickname + " " + channelName + " :No topic is set\r\n");
 	else
@@ -125,6 +125,4 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 353 " + client->Nickname + " = " + channelName + " :" + Channels.at(channelName).getClientList() + "\r\n");
 
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
-
-	BotWelcome(channelName, client);
 }

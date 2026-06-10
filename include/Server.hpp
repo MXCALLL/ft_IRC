@@ -18,6 +18,7 @@
 # include <arpa/inet.h> //? init_addr()
 # include "Client.hpp"
 # include "Channel.hpp"
+# include "Bot.hpp"
 
 //* Server Config *//
 # define ADDR "0.0.0.0"
@@ -25,9 +26,6 @@
 # define SERVER_NAME "ircserv"
 # define MAX_PORT 65535
 # define MAX_SYS_PORT 1023
-
-// Bot name used as the sender in messages
-# define BOT_NAME "BarahBot"
 
 //* Server class
 class Server
@@ -38,7 +36,7 @@ class Server
 		std::string                         Password;
 		static bool                         Signal;
 		std::map<int, Client>               Clients;
-		std::map<std::string, Channel>		Channels; //? Key is channel name (ex: "#general"). value = Channel object
+		std::map<std::string, Channel>		Channels;
 		std::vector<struct pollfd>          Fd;
 
 		void SetupSocket( int Port );
@@ -70,9 +68,6 @@ class Server
 		void SendReply( int fd, std::string msg );
 		void WelcomeClient( int fd );
 
-		//* Bot *//
-		void BotWelcome(std::string channelName, Client *client);
-		void CmdBotAnnounce(std::string param, Client *client);
 		bool NicknameInUse( std::string nickname );
 		bool isPrintable( std::string Params);
 
@@ -82,7 +77,7 @@ class Server
 		~Server();
 
 		//* Server Actions *//
-		void run( void );
+		void run( Bot &IRCBot );
 		void stop ( void );
 		static void SignalHandler( int signum );
 };
