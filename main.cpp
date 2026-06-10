@@ -35,7 +35,9 @@ int main(int argc, char const *argv[])
     try
     {
         Server Server(Port, Password);
-        Server.run();
+        Bot IRCBot(Password);
+        IRCBot.connect(Port);
+        Server.run( IRCBot );
     }
     catch(const std::exception& e)
     {
