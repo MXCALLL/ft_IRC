@@ -1,71 +1,112 @@
 #include "../include/Server.hpp"
 
-//? Bot sends a welcome message when someone joins a channel
-//? Format: "Welcome <nickname> to channel <channelName>"
-void Server::BotWelcome(std::string channelName, Client *client)
-{
-	if (!client)
-		return ;
+Bot::Bot(std::string password) : Password(password), startTime(time(NULL)) {}
 
-	// Bot sends a PRIVMSG to the channel that everyone can see
-	std::string msg = ":" + std::string(BOT_NAME) + "!" + std::string(BOT_NAME)
-		+ "@" + std::string(SERVER_NAME) + " PRIVMSG " + channelName
-		+ " :Welcome " + client->Nickname + " to channel " + channelName + "\r\n";
+void Bot::SendRaw(const std::string &msg) {
 
-	SendReply(client->Fd, msg);
+  send(this->BotFd, msg.c_str(), msg.size(), 0);
 }
 
-//? ANNOUNCE command - only operators can use it
-//? Usage: BOT ANNOUNCE <message>
-//? The bot sends the message to ALL channels on the server
-void Server::CmdBotAnnounce(std::string param, Client *client)
-{
-	if (!client || !client->Registered)
-	{
-		if (client)
-			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 451 * :You have not registered\r\n");
-		return ;
-	}
+Bot::~Bot(){}
 
-	// Check if the client is operator in at least one channel
-	bool isOp = false;
-	for (std::map<std::string, Channel>::iterator it = Channels.begin(); it != Channels.end(); ++it)
+void Bot::HandleEvent()
+{
+	char buffer[1024];
+	std::memset(buffer, 0, sizeof(buffer));
+
+	int bytes = recv(BotFd, buffer, sizeof(buffer) - 1, 0);
+	if (bytes <= 0)
+		return ;
+
+	Buffer += std::string(buffer, bytes);
+
+	size_t pos;
+	while ((pos = Buffer.find('\n')) != std::string::npos)
 	{
-		if (it->second.isOperator(client->Fd))
+		std::string line = Buffer.substr(0, pos);
+		Buffer.erase(0, pos + 1);
+		if (!line.empty() && line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
+		if (line.empty())
+			continue ;
+
+		std::istringstream ss(line);
+		std::string prefix, command, param;
+
+		if (line[0] == ':')
+			ss >> prefix;
+		ss >> command;
+		std::getline(ss, param);
+
+		if (command == "PING")
+			SendRaw("PONG" + param + "\r\n");
+		else if (command == "PRIVMSG")
 		{
-			isOp = true;
-			break ;
+			size_t excl = prefix.find('!');
+			if (excl == std::string::npos)
+				continue ;
+			std::string nick = prefix.substr(1, excl - 1);
+
+			std::istringstream pss(param);
+			std::string target;
+			pss >> target;
+
+			size_t colon = param.find(':');
+			if (colon == std::string::npos)
+				continue ;
+			std::string msg = param.substr(colon + 1);
+
+			if (target.empty() || target[0] == '#' || target[0] == '&')
+				continue ;
+
+			if (msg == "!ping")
+				SendRaw("PRIVMSG " + nick + " :PONG! I am alive.\r\n");
+			else if (msg == "!uptime")
+			{
+				time_t elapsed = time(NULL) - startTime;
+				int hours   = elapsed / 3600;
+				int minutes = (elapsed % 3600) / 60;
+				int seconds = elapsed % 60;
+
+				std::ostringstream oss;
+				oss << hours << "h " << minutes << "m " << seconds << "s";
+				SendRaw("PRIVMSG " + nick + " :Server uptime: " + oss.str() + "\r\n");
+			}
+			else if (msg == "!help")
+			{
+				SendRaw("PRIVMSG " + nick + " :Commands:\r\n");
+				SendRaw("PRIVMSG " + nick + " :  !ping   - Check if bot is alive\r\n");
+				SendRaw("PRIVMSG " + nick + " :  !uptime - Show server uptime\r\n");
+				SendRaw("PRIVMSG " + nick + " :  !help   - Show this message\r\n");
+			}
+			else
+				SendRaw("PRIVMSG " + nick + " :Unknown command. Type !help\r\n");
 		}
 	}
+}
 
-	if (!isOp)
-	{
-		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 481 " + client->Nickname
-			+ " :Only operators can use BOT ANNOUNCE\r\n");
-		return ;
-	}
+int Bot::getFd() const { return (this->BotFd); }
 
-	if (param.empty())
-	{
-		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 461 " + client->Nickname
-			+ " BOT :Not enough parameters. Usage: BOT ANNOUNCE <message>\r\n");
-		return ;
-	}
+void Bot::connect(int Port) {
 
-	// Send the announcement to every channel
-	for (std::map<std::string, Channel>::iterator it = Channels.begin(); it != Channels.end(); ++it)
-	{
-		std::string msg = ":" + std::string(BOT_NAME) + "!" + std::string(BOT_NAME)
-			+ "@" + std::string(SERVER_NAME) + " PRIVMSG " + it->first
-			+ " :[ANNOUNCEMENT] " + param + "\r\n";
+  BotFd = socket(AF_INET, SOCK_STREAM, 0);
+  if (BotFd < 0)
+    throw std::runtime_error("Error On Socket !!");
 
-		// Send to ALL clients in the channel (senderFd = -1 means everyone)
-		it->second.broadcastMessage(msg, -1);
-	}
+  sockaddr_in serv;
+  std::memset(&serv, 0, sizeof(serv));
 
-	// Confirm to the operator
-	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " NOTICE " + client->Nickname
-		+ " :Announcement sent to all channels\r\n");
+  serv.sin_family = AF_INET;
+  serv.sin_port = htons(Port);
+  serv.sin_addr.s_addr = inet_addr(ADDR);
 
-	std::cout << "[IRCSERV]: " << client->Nickname << " sent announcement: " << param << std::endl;
+  if (::connect(BotFd, reinterpret_cast<sockaddr *>(&serv), sizeof(serv)))
+    throw std::runtime_error("Error on Connect !!");
+
+  SendRaw("PASS " + Password + "\r\n");
+  SendRaw("NICK BOT\r\n");
+  SendRaw("USER bot 0 * :IRC bot\r\n");
+
+  this->Nickname = "BOT";
+  std::cout << "[BOT]: Initialization Sucsess" << std::endl;
 }

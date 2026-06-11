@@ -274,7 +274,7 @@ void Server::CmdInvite(std::string param, Client *client)
 		SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 401 " + client->Nickname + " " + targetNick + " :No such nick/channel\r\n");
 		return;
 	}
-    
+
     if (Channels.at(channelName).isClientInChannel(targetClient->Fd))
     {
         SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 443 " + client->Nickname + " " + targetNick + " " + channelName + " :is already on channel\r\n");
@@ -385,15 +385,6 @@ void Server::CmdPrivmsg( std::string param, Client *client)
     {
         SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 412 "
             + client->Nickname + " :No text to send\r\n");
-        return ;
-    }
-
-    std::string subCmd(target);
-    for (size_t i = 0; i < target.size(); ++i)
-        subCmd[i] = std::toupper(subCmd[i]);
-
-    if (subCmd == "ANNOUNCE"){
-        CmdBotAnnounce(message, client);
         return ;
     }
 

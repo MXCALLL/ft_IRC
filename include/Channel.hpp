@@ -20,11 +20,9 @@ class Channel
 		std::vector<int>			_inviteList;
 
 	public:
-		//* Constructor & Destructor *//
 		Channel(std::string name);
 		~Channel();
 
-		//*  Getters *//
 		std::string	getName() const;
 		bool		isInviteOnly() const;
 		size_t		getClientCount() const;
