@@ -1,6 +1,6 @@
 #include "../include/Server.hpp"
 
-//? get client by fd
+
 Client *Server::getClientByFd( int fd )
 {
 	if (Clients.count(fd))
@@ -8,7 +8,7 @@ Client *Server::getClientByFd( int fd )
 	return NULL;
 }
 
-//? get client by nickname from server's list clients
+
 Client *Server::getClientByNickFromServer(std::string nickname)
 {
 	for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); ++it)
@@ -19,7 +19,6 @@ Client *Server::getClientByNickFromServer(std::string nickname)
 	return NULL;
 }
 
-//? appends msg to the client's OutBuffer
 void Server::SendReply( int fd, std::string msg )
 {
 	Client *client = getClientByFd(fd);
@@ -82,19 +81,19 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 	{
 		if (Channels.at(channelName).isClientInChannel(client->Fd))
 			return ;
-		//? check passwords before joining (MODE +k)
+
 		if (!Channels.at(channelName).getKey().empty() && key != Channels.at(channelName).getKey())
 		{
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 475 " + client->Nickname + " " + channelName + " :Cannot join channel (+k)\r\n");
 			return ;
 		}
-		//? check limits before joining (MODE +l)
+
 		if (Channels.at(channelName).getChannelUserLimit() > 0 && Channels.at(channelName).getClientCount() >= Channels.at(channelName).getChannelUserLimit())
 		{
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 471 " + client->Nickname + " " + channelName + " :Cannot join channel (+l)\r\n");
 			return ;
 		}
-		//? check invite-only before joining (MODE +i)
+
 		if (Channels.at(channelName).isInviteOnly() && !Channels.at(channelName).isInvited(client->Fd))
 		{
 			SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 473 " + client->Nickname + " " + channelName + " :Cannot join channel (+i)\r\n");
@@ -102,7 +101,7 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 		}
 		Channels.at(channelName).addClient(client);
 
-		//? remove client from invite list after he join
+
 		if (Channels.at(channelName).isInviteOnly() && Channels.at(channelName).isInvited(client->Fd))
 			Channels.at(channelName).removeFromInviteList(client->Fd);
 

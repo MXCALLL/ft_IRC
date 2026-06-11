@@ -31,6 +31,7 @@ void Server::run(Bot &IRCBot) {
   signal(SIGQUIT, SignalHandler);
 
   while (!Signal) {
+
     for (size_t i = 1; i < Fd.size(); ++i) {
 
       Client *client = getClientByFd(Fd[i].fd);
@@ -95,6 +96,7 @@ void Server::stop(void) {
   Clients.clear();
   Fd.clear();
   if (listenSockFd >= 0) {
+
     close(listenSockFd);
     listenSockFd = -1;
   }
@@ -102,6 +104,7 @@ void Server::stop(void) {
 }
 
 void Server::SignalHandler(int signum) {
+
   (void)signum;
   std::cout << "\n[IRCSERV]: Shutting Down !!" << std::endl;
   Signal = true;
@@ -157,6 +160,7 @@ void Server::AcceptClient(void) {
   int clientFd = accept(listenSockFd, reinterpret_cast<sockaddr *>(&clientAddr),
                         &clientLen);
   if (clientFd < 0) {
+
     std::cerr << "[IRCSERV]: Error On Accept !!" << std::endl;
     return;
   }
@@ -178,12 +182,14 @@ void Server::AcceptClient(void) {
 }
 
 void Server::ReceiveData(int fd) {
+
   char buffer[BUFFER_SIZE];
   std::memset(buffer, 0, BUFFER_SIZE);
 
   int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
 
   if (bytes <= 0) {
+
     DisconnectClient(fd);
     return;
   }
@@ -196,6 +202,7 @@ void Server::ReceiveData(int fd) {
 
   size_t pos;
   while ((pos = client->Buffer.find("\n")) != std::string::npos) {
+
     std::string line = client->Buffer.substr(0, pos);
     client->Buffer.erase(0, pos + 1);
 
@@ -208,6 +215,7 @@ void Server::ReceiveData(int fd) {
 }
 
 void Server::SendData(int fd) {
+
   Client *client = getClientByFd(fd);
   if (!client)
     return;
@@ -217,11 +225,11 @@ void Server::SendData(int fd) {
     return;
 
   int bytes = send(fd, out.c_str(), out.size(), 0);
-  if (bytes > 0) {
+  if (bytes > 0)
     client->OutBuffer.erase(0, bytes);
-  } else if (bytes < 0) {
+  else if (bytes < 0)
     DisconnectClient(fd);
-  }
+
 }
 
 void Server::DisconnectClient(int fd) {
@@ -240,6 +248,7 @@ void Server::DisconnectClient(int fd) {
   Clients.erase(fd);
 
   for (size_t i = 0; i < Fd.size(); i++) {
+
     if (Fd[i].fd == fd) {
       Fd.erase(Fd.begin() + i);
       break;

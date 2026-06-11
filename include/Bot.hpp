@@ -15,6 +15,8 @@ class Bot
 
 	public:
 		Bot(std::string password);
+		~Bot();
+
 		void connect(int Port);
 		int getFd() const;
 		void SendRaw(const std::string &msg);

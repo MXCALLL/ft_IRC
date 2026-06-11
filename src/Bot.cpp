@@ -7,6 +7,8 @@ void Bot::SendRaw(const std::string &msg) {
   send(this->BotFd, msg.c_str(), msg.size(), 0);
 }
 
+Bot::~Bot(){}
+
 void Bot::HandleEvent()
 {
 	char buffer[1024];

@@ -13,9 +13,9 @@
 # include <csignal>
 # include <sys/socket.h>
 # include <sys/types.h>
-# include <netinet/in.h> //? sockaddr_in
+# include <netinet/in.h>
 # include <poll.h>
-# include <arpa/inet.h> //? init_addr()
+# include <arpa/inet.h>
 # include "Client.hpp"
 # include "Channel.hpp"
 # include "Bot.hpp"
@@ -54,10 +54,10 @@ class Server
         void CmdUser( std::string param, Client *client );
 
 		//* Channel Commands *//
-		void CmdJoin( std::string param, Client *client );   //! done
-		void JoinOneChannel(std::string channelName, std::string key, Client *client); //? helper fun for JOIN
-        void CmdKick( std::string param, Client *client );   //! done
-        void CmdInvite( std::string param, Client *client ); //! done
+		void CmdJoin( std::string param, Client *client );
+		void JoinOneChannel(std::string channelName, std::string key, Client *client);
+        void CmdKick( std::string param, Client *client );
+        void CmdInvite( std::string param, Client *client );
 
 		void CmdMode( std::string param, Client *client);
 		void CmdTopic( std::string param, Client *client);
