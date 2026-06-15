@@ -1,8 +1,8 @@
 #ifndef BOT_H
-#define BOT_H
+# define BOT_H
 
-#include "Server.hpp"
-#include <ctime>
+# include "Server.hpp"
+# include <ctime>
 
 class Bot
 {

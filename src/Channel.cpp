@@ -5,9 +5,7 @@ Channel::Channel(std::string name) : _name(name), _topic(""), _key(""), _inviteO
 
 }
 
-
 Channel::~Channel() {}
-
 
 std::string Channel::getName() const
 {
@@ -41,18 +39,15 @@ size_t Channel::getClientCount() const
 	return _clients.size();
 }
 
-
 std::string Channel::getKey() const
 {
 	return _key;
 }
 
-
 size_t Channel::getChannelUserLimit() const
 {
 	return _userLimit;
 }
-
 
 std::string Channel::getTopic() const
 {
@@ -88,9 +83,6 @@ void Channel::setUserLimit(size_t limit)
 {
 	_userLimit = limit;
 }
-
-
-
 
 void Channel::addClient(Client* client)
 {
