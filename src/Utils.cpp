@@ -1,13 +1,11 @@
 #include "../include/Server.hpp"
 
-
 Client *Server::getClientByFd( int fd )
 {
 	if (Clients.count(fd))
 		return &Clients[fd];
 	return NULL;
 }
-
 
 Client *Server::getClientByNickFromServer(std::string nickname)
 {
