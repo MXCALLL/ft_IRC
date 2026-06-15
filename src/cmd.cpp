@@ -70,6 +70,16 @@ void Server::CmdNick( std::string param, Client *client )
 	client->Nickname = param;
 	std::cout << "[IRCSERV]: fd " << client->Fd << " Nickname set to " << param << std::endl;
 
+    std::string nickMsg = ":" + oldNick + "!" + client->Username + "@" + client->IpAddr + " NICK :" + param + "\r\n";
+    
+    SendReply(client->Fd, nickMsg);
+    
+    for (std::map<std::string, Channel>::iterator it = Channels.begin(); it != Channels.end(); ++it)
+    {
+        if (it->second.isClientInChannel(client->Fd))
+            it->second.broadcastMessage(nickMsg, client->Fd);
+    }
+
 	if (!client->Registered && !client->Username.empty())
 	{
 		client->Registered = true;
@@ -289,7 +299,7 @@ void Server::CmdInvite(std::string param, Client *client)
     	Channels.at(channelName).addToInviteList(targetClient->Fd);
 }
 
-void    Server::CmdTopic( std::string param, Client *client)
+void Server::CmdTopic( std::string param, Client *client)
 {
     std::string channelName;
     std::string newTopic;
