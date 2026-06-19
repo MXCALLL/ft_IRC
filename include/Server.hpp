@@ -70,6 +70,7 @@ class Server
 
 		bool NicknameInUse( std::string nickname );
 		bool isPrintable( std::string Params);
+		std::vector<std::string> splitString(const std::string &str, char delimiter);
 
 	public:
 		Server();

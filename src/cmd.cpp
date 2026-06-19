@@ -160,25 +160,17 @@ void Server::CmdJoin(std::string param, Client *client)
 
 	std::istringstream			ss(param);
 	std::string					channelList;
-	std::string					channelName;
-	std::vector<std::string>	keys;
 	std::string					keyList;
-	std::string					singleKey;
 
 	ss >> channelList >> keyList;
 
-	std::istringstream	css(channelList);
-	std::istringstream	kss(keyList);
+	std::vector<std::string> channels = splitString(channelList, ',');
+	std::vector<std::string> keys = splitString(keyList, ',');
 
-	while (std::getline(kss, singleKey, ','))
-		keys.push_back(singleKey);
-
-	int i = 0;
-	while (std::getline(css, channelName, ','))
+	for (size_t i = 0; i < channels.size(); ++i)
 	{
-		std::string currentKey = (i < (int)keys.size()) ? keys[i]: "";
-		JoinOneChannel(channelName, currentKey, client);
-		++i;
+		std::string currentKey = (i < keys.size()) ? keys[i]: "";
+		JoinOneChannel(channels[i], currentKey, client);
 	}
 }
 

@@ -123,3 +123,15 @@ void Server::JoinOneChannel(std::string channelName, std::string key, Client *cl
 
 	SendReply(client->Fd, ":" + std::string(SERVER_NAME) + " 366 " + client->Nickname + " " + channelName + " :End of /NAMES list\r\n");
 }
+
+std::vector<std::string> Server::splitString(const std::string &str, char delimiter)
+{
+	std::vector<std::string> tokens;
+	std::string token;
+	std::stringstream tokenStream(str);
+
+	while (std::getline(tokenStream, token, delimiter))
+			tokens.push_back(token);
+
+	return tokens;
+}
