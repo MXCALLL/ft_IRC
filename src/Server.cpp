@@ -48,7 +48,8 @@ void Server::run(Bot &IRCBot) {
       throw std::runtime_error("Error On Poll !!");
     }
 
-    for (size_t i = 0; i < Fd.size();) {
+    size_t i = 0;
+    while (i < Fd.size()) {
 
       int currentFd = Fd[i].fd;
 
