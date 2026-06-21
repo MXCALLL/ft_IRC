@@ -283,9 +283,9 @@ void Server::HandleCommand(std::string cmd, int fd) {
   ss >> command;
   std::getline(ss, param);
 
-  size_t first_non_space = param.find_first_not_of(' ');
-  if (first_non_space != std::string::npos)
-    param = param.substr(first_non_space);
+  size_t start_pos = param.find_first_not_of(' ');
+  if (start_pos != std::string::npos)
+    param = param.substr(start_pos);
   else
     param = "";
 
